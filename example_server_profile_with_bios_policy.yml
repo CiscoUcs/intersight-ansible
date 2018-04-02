@@ -1,0 +1,76 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: no
+  vars:
+    api_info: &api_info
+      api_private_key: <path of your private key>
+      api_key_id: <public key id>
+    object_state: present
+  tasks:
+  - name: Configure Server Profile
+    intersight_objects:
+      <<: *api_info
+      objects:
+      - {
+        "api_module": "intersight.apis.server_profile_api",
+        "api_class": "ServerProfileApi",
+        "api_method_prefix": "server_profiles",
+        "get_filter": "Name eq 'ansible-demo'",
+        "data_module": "intersight.models.server_profile",
+        "data_class": "ServerProfile",
+        "api_body": {
+            "Name": "ansible-demo"
+        }
+      }
+      state: "{{ object_state }}"
+    register: profile_result
+  - debug:
+      msg: "{{ profile_result.api_response.moid }}"
+    when: profile_result.api_response.moid is defined
+  - name: Configure BIOS Policy
+    intersight_objects:
+      <<: *api_info
+      objects:
+      - {
+        "api_module": "intersight.apis.bios_policy_api",
+        "api_class": "BiosPolicyApi",
+        "api_method_prefix": "bios_policies",
+        "get_filter": "Name eq 'ht-disable'",
+        "data_module": "intersight.models.bios_policy",
+        "data_class": "BiosPolicy",
+        "api_body": {
+            "Name": "ht-disable",
+            "Processor": {
+                "IntelHyperThreadingTech": "disabled",
+            }
+        }
+      }
+      state: "{{ object_state }}"
+    register: policy_result
+  - debug:
+      msg: "{{ policy_result.api_response.moid }}"
+    when: policy_result.api_response.moid is defined 
+  - name: Configure Server Profile with BIOS Policy
+    intersight_objects:
+      <<: *api_info
+      objects:
+      - {
+        "api_module": "intersight.apis.bios_policy_api",
+        "api_class": "BiosPolicyApi",
+        "api_method_prefix": "bios_policies",
+        "object_moid": "{{ policy_result.api_response.moid }}",
+        "data_module": "intersight.models.bios_policy",
+        "data_class": "BiosPolicy",
+        "api_body": {
+            "Profiles": [
+                {
+                    "ObjectType": "server.Profile",
+                    "Moid": "{{ profile_result.api_response.moid }}"
+                }
+            ]
+        } 
+      }
+      state: "{{ object_state }}"
+    register: profile_policy_result
+    when: profile_result.api_response.moid is defined and policy_result.api_response.moid is defined
