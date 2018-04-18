@@ -1,0 +1,294 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: no
+  vars:
+    api_info: &api_info
+      api_private_key:  <path of your private key>
+      api_key_id: <public key id>
+    object_state: present
+  tasks:
+  # HX Cluster profile with cluster IP specified
+  - name: Configure HX Cluster Profile
+    intersight_objects:
+      <<: *api_info
+      objects:
+      - {
+        "api_module": "intersight.apis.hyperflex_cluster_profile_api",
+        "api_class": "HyperflexClusterProfileApi",
+        "api_method_prefix": "hyperflex_cluster_profiles",
+        "get_filter": "Name eq 'sjc07-r13-hx-edge-2'",
+        "data_module": "intersight.models.hyperflex_cluster_profile",
+        "data_class": "HyperflexClusterProfile",
+        "api_body": {
+            "Name":"sjc07-r13-hx-edge-2",
+            "MgmtPlatform":"EDGE",
+            "Description":"3 node Edge M5 cluster",
+            "StorageDataVlan":{
+                "VlanId":224
+            },
+            "MgmtIpAddress":"172.28.224.171",
+            "Tags":[
+                {
+                    "Key":"Demo",
+                    "Value":"Yes"
+                }
+            ]
+        }
+      }
+      state: "{{ object_state }}"
+    register: profile_result
+  # Policies for the above profile using the cluster profile's moid
+  - name: Configure HX Local Credential Policy
+    intersight_objects:
+      <<: *api_info
+      objects:
+      - {
+        "api_module": "intersight.apis.hyperflex_local_credential_policy_api",
+        "api_class": "HyperflexLocalCredentialPolicyApi",
+        "api_method_prefix": "hyperflex_local_credential_policies",
+        "get_filter": "Name eq 'sjc07-r13-hx-edge-2-local-credential-policy'",
+        "data_module": "intersight.models.hyperflex_local_credential_policy",
+        "data_class": "HyperflexLocalCredentialPolicy",
+        "api_body": {
+            "Name":"sjc07-r13-hx-edge-2-local-credential-policy",
+            "HypervisorAdmin":"root",
+            "ClusterProfiles":[
+                {
+                    "Moid": "{{ profile_result.api_response.moid }}",
+                    "ObjectType": "hyperflex.ClusterProfile"
+                }
+            ]
+        }
+      }
+      state: "{{ object_state }}"
+    register: local_credential_policy_result
+    when: profile_result.api_response.moid is defined
+  - name: Configure HX Sys Config Policy
+    intersight_objects:
+      <<: *api_info
+      objects:
+      - {
+        "api_module": "intersight.apis.hyperflex_sys_config_policy_api",
+        "api_class": "HyperflexSysConfigPolicyApi",
+        "api_method_prefix": "hyperflex_sys_config_policies",
+        "get_filter": "Name eq 'sjc07-r13-hx-edge-2-sys-config-policy'",
+        "data_module": "intersight.models.hyperflex_sys_config_policy",
+        "data_class": "HyperflexSysConfigPolicy",
+        "api_body": {
+            "Name":"sjc07-r13-hx-edge-2-sys-config-policy",
+            "Timezone":"America/Los_Angeles",
+            "DnsServers":[
+                "172.22.249.1",
+                "171.70.168.183"
+            ],
+            "NtpServers":[
+                "ntp.esl.cisco.com"
+            ],
+            "ClusterProfiles":[
+                {
+                    "Moid": "{{ profile_result.api_response.moid }}",
+                    "ObjectType": "hyperflex.ClusterProfile"
+                }
+            ]
+        }
+      }
+      state: "{{ object_state }}"
+    register: sys_config_policy_result
+    when: profile_result.api_response.moid is defined
+  - name: Configure HX vCenter Config Policy
+    intersight_objects:
+      <<: *api_info
+      objects:
+      - {
+        "api_module": "intersight.apis.hyperflex_vcenter_config_policy_api",
+        "api_class": "HyperflexVcenterConfigPolicyApi",
+        "api_method_prefix": "hyperflex_vcenter_config_policies",
+        "get_filter": "Name eq 'sjc07-r13-hx-edge-2-vcenter-config-policy'",
+        "data_module": "intersight.models.hyperflex_vcenter_config_policy",
+        "data_class": "HyperflexVcenterConfigPolicy",
+        "api_body": {
+            "Name":"sjc07-r13-hx-edge-2-vcenter-config-policy",
+            "Hostname":"vcenter65.ucsdemo.cisco.com",
+            "UserName":"Administrator@vsphere.local",
+            "DataCenter":"SJC07",
+            "ClusterProfiles":[
+                {
+                    "Moid": "{{ profile_result.api_response.moid }}",
+                    "ObjectType": "hyperflex.ClusterProfile"
+                }
+            ]
+        }
+      }
+      state: "{{ object_state }}"
+    register: vcenter_config_policy_result
+    when: profile_result.api_response.moid is defined
+  - name: Configure HX Node Config Policy
+    intersight_objects:
+      <<: *api_info
+      objects:
+      - {
+        "api_module": "intersight.apis.hyperflex_node_config_policy_api",
+        "api_class": "HyperflexNodeConfigPolicyApi",
+        "api_method_prefix": "hyperflex_node_config_policies",
+        "get_filter": "Name eq 'sjc07-r13-hx-edge-2-node-config-policy'",
+        "data_module": "intersight.models.hyperflex_node_config_policy",
+        "data_class": "HyperflexNodeConfigPolicy",
+        "api_body": {
+            "Name":"sjc07-r13-hx-edge-2-node-config-policy",
+            "NodeNamePrefix":"sjc07-r13-hx-edge-2",
+            "MgmtIpRange":{
+                "StartAddr":"172.28.224.165",
+                "EndAddr":"172.28.224.167",
+                "Netmask":"255.255.254.0",
+                "Gateway":"172.28.224.1"
+            },
+            "HxdpIpRange":{
+                "StartAddr":"172.28.224.168",
+                "EndAddr":"172.28.224.170",
+                "Netmask":"255.255.254.0",
+                "Gateway":"172.28.224.1"
+            },
+            "ClusterProfiles":[
+                {
+                    "Moid": "{{ profile_result.api_response.moid }}",
+                    "ObjectType": "hyperflex.ClusterProfile"
+                }
+            ]
+        }
+      }
+      state: "{{ object_state }}"
+    register: node_config_policy_result
+    when: profile_result.api_response.moid is defined
+  - name: Configure HX Cluster Network Policy
+    intersight_objects:
+      <<: *api_info
+      objects:
+      - {
+        "api_module": "intersight.apis.hyperflex_cluster_network_policy_api",
+        "api_class": "HyperflexClusterNetworkPolicyApi",
+        "api_method_prefix": "hyperflex_cluster_network_policies",
+        "get_filter": "Name eq 'sjc07-r13-hx-edge-2-cluster-network-policy'",
+        "data_module": "intersight.models.hyperflex_cluster_network_policy",
+        "data_class": "HyperflexClusterNetworkPolicy",
+        "api_body": {
+            "Name":"sjc07-r13-hx-edge-2-cluster-network-policy",
+            "MgmtVlan":{
+                "VlanId":1
+            },
+            "JumboFrame":false,
+            "ClusterProfiles":[
+                {
+                    "Moid": "{{ profile_result.api_response.moid }}",
+                    "ObjectType": "hyperflex.ClusterProfile"
+                }
+            ]
+        }
+      }
+      state: "{{ object_state }}"
+    register: cluster_network_policy_result
+    when: profile_result.api_response.moid is defined
+  # find desired servers by SN (name in the API)
+  - name: Lookup server1
+    intersight_objects:
+      <<: *api_info
+      objects:
+      - {
+        "api_module": "intersight.apis.compute_physical_summary_api",
+        "api_class": "ComputePhysicalSummaryApi",
+        "api_method_prefix": "compute_physical_summaries",
+        "get_filter": "Name eq 'C220-WZP2204097Z'",
+        "data_module": "intersight.models.compute_physical_summary",
+        "data_class": "ComputePhysicalSummary"
+      }
+      state: "{{ object_state }}"
+    register: server1_result
+  - name: Lookup server2
+    intersight_objects:
+      <<: *api_info
+      objects:
+      - {
+        "api_module": "intersight.apis.compute_physical_summary_api",
+        "api_class": "ComputePhysicalSummaryApi",
+        "api_method_prefix": "compute_physical_summaries",
+        "get_filter": "Name eq 'C220-WZP2204090C'",
+        "data_module": "intersight.models.compute_physical_summary",
+        "data_class": "ComputePhysicalSummary"
+      }
+      state: "{{ object_state }}"
+    register: server2_result
+  - name: Lookup server3
+    intersight_objects:
+      <<: *api_info
+      objects:
+      - {
+        "api_module": "intersight.apis.compute_physical_summary_api",
+        "api_class": "ComputePhysicalSummaryApi",
+        "api_method_prefix": "compute_physical_summaries",
+        "get_filter": "Name eq 'C220-WZP220400B3'",
+        "data_module": "intersight.models.compute_physical_summary",
+        "data_class": "ComputePhysicalSummary"
+      }
+      state: "{{ object_state }}"
+    register: server3_result
+  # update node profiles for each server above
+  - name: Configure Server1 Node Profile
+    intersight_objects:
+      <<: *api_info
+      objects:
+      - {
+        "api_module": "intersight.apis.hyperflex_node_profile_api",
+        "api_class": "HyperflexNodeProfileApi",
+        "api_method_prefix": "hyperflex_node_profiles",
+        "get_filter": "Name eq 'sjc07-r13-hx-edge-2-1'",
+        "data_module": "intersight.models.hyperflex_node_profile",
+        "data_class": "HyperflexNodeProfile",
+        "api_body": {
+            "Name":"sjc07-r13-hx-edge-2-1",
+            "AssignedServer":"{{ server1_result.api_response.moid }}",
+            "ClusterProfile":"{{ profile_result.api_response.moid }}"
+        }
+      }
+      state: "{{ object_state }}"
+    register: server1_node_profile_result
+    when: profile_result.api_response.moid is defined and server1_result.api_response.moid
+  - name: Configure Server2 Node Profile
+    intersight_objects:
+      <<: *api_info
+      objects:
+      - {
+        "api_module": "intersight.apis.hyperflex_node_profile_api",
+        "api_class": "HyperflexNodeProfileApi",
+        "api_method_prefix": "hyperflex_node_profiles",
+        "get_filter": "Name eq 'sjc07-r13-hx-edge-2-2'",
+        "data_module": "intersight.models.hyperflex_node_profile",
+        "data_class": "HyperflexNodeProfile",
+        "api_body": {
+            "Name":"sjc07-r13-hx-edge-2-2",
+            "AssignedServer":"{{ server2_result.api_response.moid }}",
+            "ClusterProfile":"{{ profile_result.api_response.moid }}"
+        }
+      }
+      state: "{{ object_state }}"
+    register: server2_node_profile_result
+    when: profile_result.api_response.moid is defined and server2_result.api_response.moid
+  - name: Configure Server3 Node Profile
+    intersight_objects:
+      <<: *api_info
+      objects:
+      - {
+        "api_module": "intersight.apis.hyperflex_node_profile_api",
+        "api_class": "HyperflexNodeProfileApi",
+        "api_method_prefix": "hyperflex_node_profiles",
+        "get_filter": "Name eq 'sjc07-r13-hx-edge-2-3'",
+        "data_module": "intersight.models.hyperflex_node_profile",
+        "data_class": "HyperflexNodeProfile",
+        "api_body": {
+            "Name":"sjc07-r13-hx-edge-2-3",
+            "AssignedServer":"{{ server3_result.api_response.moid }}",
+            "ClusterProfile":"{{ profile_result.api_response.moid }}"
+        }
+      }
+      state: "{{ object_state }}"
+    register: server3_node_profile_result
+    when: profile_result.api_response.moid is defined and server3_result.api_response.moid
