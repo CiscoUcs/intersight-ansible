@@ -164,6 +164,21 @@ def get_object(api_object, item):
     return response_dict
 
 
+def compare_values(expected, actual):
+    try:
+        for (key, value) in iteritems(expected):
+            if not compare_values(value, actual[key]):
+                return False
+        else:
+            # loop complete with all items matching
+            return True
+    except AttributeError,TypeError:
+        if expected and actual != expected:
+            return False
+        else:
+            return True
+
+
 def main():
     argument_spec = dict(
         api_private_key=dict(type='path', required=True),
@@ -228,38 +243,33 @@ def main():
                     result['api_response'] = {}
                     result['changed'] = True
             else:
-                # configure resource as present
-                if moid:
-                    # check object properties
-                    data_module = import_module(item['data_module'])
+                # configure as present.  Note that no api_body implies a GET only - api_response from above returned
+                if item.get('api_body'):
+                    # configure based on api_body
+                    if moid:
+                        # check object properties
+                        data_module = import_module(item['data_module'])
 
-                    data_class = getattr(data_module, item['data_class'])
-                    deserialize_instance = ApiClient()
-                    data_object = deserialize_instance._ApiClient__deserialize_model(item['api_body'], data_class)
-                    deserialize_dict = data_object.to_dict()
-                    for (key, value) in iteritems(deserialize_dict):
-                        if value and response_dict[key] != value:
-                            break
-                    else:
-                        props_match = True
+                        data_class = getattr(data_module, item['data_class'])
+                        deserialize_instance = ApiClient()
+                        data_object = deserialize_instance._ApiClient__deserialize_model(item['api_body'], data_class)
+                        deserialize_dict = data_object.to_dict()
+                        props_match = compare_values(deserialize_dict, response_dict)
 
-                if not props_match:
-                    if not module.check_mode:
-                        if not item.get('api_body'):
-                            item['api_body'] = ''
+                    if not props_match:
+                        if not module.check_mode:
+                            if moid:
+                                # update the resource - user has to specify all the props they want updated
+                                api_moid_patch_method = getattr(api_object, item['api_method_prefix'] + '_moid_patch')
+                                api_response = api_moid_patch_method(moid, item['api_body'])
+                            else:
+                                # create the resource
+                                api_post_method = getattr(api_object, item['api_method_prefix'] + '_post')
+                                api_response = api_post_method(item['api_body'])
 
-                        if moid:
-                            # update the resource - user has to specify all the props they want updated
-                            api_moid_patch_method = getattr(api_object, item['api_method_prefix'] + '_moid_patch')
-                            api_response = api_moid_patch_method(moid, item['api_body'])
-                        else:
-                            # create the resource
-                            api_post_method = getattr(api_object, item['api_method_prefix'] + '_post')
-                            api_response = api_post_method(item['api_body'])
-
-                        if not api_response:
-                            result['api_response'] = get_object(api_object, item)
-                    result['changed'] = True
+                            if not api_response:
+                                result['api_response'] = get_object(api_object, item)
+                        result['changed'] = True
 
     except Exception as e:
         err = True
