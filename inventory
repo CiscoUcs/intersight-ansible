@@ -1,0 +1,13 @@
+[sjc07-hx-edge]
+sjc07-r13-hx-edge-1
+sjc07-r13-hx-edge-2
+sjc07-r13-hx-edge-3
+sjc07-r13-hx-edge-4
+
+[ucspe]
+ucspe-20-40
+ucspe-20-50
+
+[ucs:children]
+sjc07-hx-edge
+ucspe

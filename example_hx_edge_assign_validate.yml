@@ -1,0 +1,189 @@
+---
+# host specific policies.  Use the ucs hosts group to configure multiple targets
+- hosts: "{{ target }}"
+  connection: local
+  gather_facts: no
+  vars:
+    api_info: &api_info
+      api_private_key: "{{ api_private_key }}"
+      api_key_id: "{{ api_key_id }}"
+    object_state: present
+    target: ucs
+  tasks:
+  # GET HX Cluster profile
+  - name: HX Cluster Profile
+    intersight_objects:
+      <<: *api_info
+      objects:
+      - {
+        "api_module": "intersight.apis.hyperflex_cluster_profile_api",
+        "api_class": "HyperflexClusterProfileApi",
+        "api_method_prefix": "hyperflex_cluster_profiles",
+        "get_filter": "Name eq '{{ hx_profile_name }}'",
+        "data_module": "intersight.models.hyperflex_cluster_profile",
+        "data_class": "HyperflexClusterProfile"
+      }
+      state: "{{ object_state }}"
+    register: profile
+  # find desired servers by SN (name in the API)
+  - name: Lookup server 1
+    intersight_objects:
+      <<: *api_info
+      objects:
+      - {
+        "api_module": "intersight.apis.compute_physical_summary_api",
+        "api_class": "ComputePhysicalSummaryApi",
+        "api_method_prefix": "compute_physical_summaries",
+        "get_filter": "Name eq '{{ hx_server_1 }}'",
+        "data_module": "intersight.models.compute_physical_summary",
+        "data_class": "ComputePhysicalSummary"
+      }
+      state: "{{ object_state }}"
+    register: server_1
+  - name: Lookup server 2
+    intersight_objects:
+      <<: *api_info
+      objects:
+      - {
+        "api_module": "intersight.apis.compute_physical_summary_api",
+        "api_class": "ComputePhysicalSummaryApi",
+        "api_method_prefix": "compute_physical_summaries",
+        "get_filter": "Name eq '{{ hx_server_2 }}'",
+        "data_module": "intersight.models.compute_physical_summary",
+        "data_class": "ComputePhysicalSummary"
+      }
+      state: "{{ object_state }}"
+    register: server_2
+  - name: Lookup server 3
+    intersight_objects:
+      <<: *api_info
+      objects:
+      - {
+        "api_module": "intersight.apis.compute_physical_summary_api",
+        "api_class": "ComputePhysicalSummaryApi",
+        "api_method_prefix": "compute_physical_summaries",
+        "get_filter": "Name eq '{{ hx_server_3 }}'",
+        "data_module": "intersight.models.compute_physical_summary",
+        "data_class": "ComputePhysicalSummary"
+      }
+      state: "{{ object_state }}"
+    register: server_3
+  # update node profiles for each server above
+  - name: Configure Server 1 Node Profile
+    intersight_objects:
+      <<: *api_info
+      objects:
+      - {
+        "api_module": "intersight.apis.hyperflex_node_profile_api",
+        "api_class": "HyperflexNodeProfileApi",
+        "api_method_prefix": "hyperflex_node_profiles",
+        "get_filter": "Name eq '{{ hx_profile_name}}-1'",
+        "data_module": "intersight.models.hyperflex_node_profile",
+        "data_class": "HyperflexNodeProfile",
+        "api_body": {
+            "Name":"{{ hx_profile_name}}-1",
+            "AssignedServer":"{{ server_1.api_response.moid }}",
+            "ClusterProfile":"{{ profile.api_response.moid }}"
+        }
+      }
+      state: "{{ object_state }}"
+    when: profile.api_response is defined and server_1.api_response is defined
+  - name: Configure Server 2 Node Profile
+    intersight_objects:
+      <<: *api_info
+      objects:
+      - {
+        "api_module": "intersight.apis.hyperflex_node_profile_api",
+        "api_class": "HyperflexNodeProfileApi",
+        "api_method_prefix": "hyperflex_node_profiles",
+        "get_filter": "Name eq '{{ hx_profile_name}}-2'",
+        "data_module": "intersight.models.hyperflex_node_profile",
+        "data_class": "HyperflexNodeProfile",
+        "api_body": {
+            "Name":"{{ hx_profile_name}}-2",
+            "AssignedServer":"{{ server_2.api_response.moid }}",
+            "ClusterProfile":"{{ profile.api_response.moid }}"
+        }
+      }
+      state: "{{ object_state }}"
+    when: profile.api_response is defined and server_2.api_response is defined
+  - name: Configure Server 3 Node Profile
+    intersight_objects:
+      <<: *api_info
+      objects:
+      - {
+        "api_module": "intersight.apis.hyperflex_node_profile_api",
+        "api_class": "HyperflexNodeProfileApi",
+        "api_method_prefix": "hyperflex_node_profiles",
+        "get_filter": "Name eq '{{ hx_profile_name}}-3'",
+        "data_module": "intersight.models.hyperflex_node_profile",
+        "data_class": "HyperflexNodeProfile",
+        "api_body": {
+            "Name":"{{ hx_profile_name}}-3",
+            "AssignedServer":"{{ server_3.api_response.moid }}",
+            "ClusterProfile":"{{ profile.api_response.moid }}"
+        }
+      }
+      state: "{{ object_state }}"
+    when: profile.api_response is defined and server_3.api_response is defined
+  # Check HX Cluster profile state
+  - name: Check HX Cluster Profile config state
+    intersight_objects:
+      <<: *api_info
+      objects:
+      - {
+        "api_module": "intersight.apis.hyperflex_cluster_profile_api",
+        "api_class": "HyperflexClusterProfileApi",
+        "api_method_prefix": "hyperflex_cluster_profiles",
+        "object_moid": "{{ profile.api_response.moid }}",
+        "data_module": "intersight.models.hyperflex_cluster_profile",
+        "data_class": "HyperflexClusterProfile"
+      }
+      state: "{{ object_state }}"
+    register: initial_config
+    when: profile.api_response is defined
+  # HX Cluster profile validate
+  - name: Validate HX Cluster Profile
+    intersight_objects:
+      <<: *api_info
+      objects:
+      - {
+        "api_module": "intersight.apis.hyperflex_cluster_profile_api",
+        "api_class": "HyperflexClusterProfileApi",
+        "api_method_prefix": "hyperflex_cluster_profiles",
+        "object_moid": "{{ profile.api_response.moid }}",
+        "data_module": "intersight.models.hyperflex_cluster_profile",
+        "data_class": "HyperflexClusterProfile",
+        "api_body": {
+            "Action":"Validate"
+        }
+      }
+      state: "{{ object_state }}"
+    when:
+    - profile.api_response is defined
+    - initial_config.api_response is defined
+    - initial_config.api_response.config_context.config_state != 'Associated'
+    - initial_config.api_response.config_context.config_state != 'Assigned'
+  # Wait for HX Cluster profile validate
+  - name: Wait for HX Cluster Profile validate
+    intersight_objects:
+      <<: *api_info
+      objects:
+      - {
+        "api_module": "intersight.apis.hyperflex_cluster_profile_api",
+        "api_class": "HyperflexClusterProfileApi",
+        "api_method_prefix": "hyperflex_cluster_profiles",
+        "object_moid": "{{ profile.api_response.moid }}",
+        "data_module": "intersight.models.hyperflex_cluster_profile",
+        "data_class": "HyperflexClusterProfile"
+      }
+      state: "{{ object_state }}"
+    when:
+    - profile.api_response.moid is defined
+    - initial_config.api_response is defined
+    - initial_config.api_response.config_context.config_state != 'Associated'
+    - initial_config.api_response.config_context.config_state != 'Assigned'
+    register: result
+    until: result.api_response.config_context.config_state == 'Assigned'
+    retries: 20
+    delay: 30
