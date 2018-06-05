@@ -129,6 +129,7 @@ api_response:
 '''
 
 from importlib import import_module
+import re
 import json
 from ansible.module_utils.basic import AnsibleModule
 
@@ -167,16 +168,17 @@ def get_object(api_object, item):
 def compare_values(expected, actual):
     try:
         for (key, value) in iteritems(expected):
+            if re.search(r'p(ass)?w(or)?d', key):
+                # do not compare any password related attributes
+                continue
             if not compare_values(value, actual[key]):
                 return False
-        else:
-            # loop complete with all items matching
-            return True
-    except AttributeError,TypeError:
+        # loop complete with all items matching
+        return True
+    except (AttributeError, TypeError):
         if expected and actual != expected:
             return False
-        else:
-            return True
+        return True
 
 
 def main():
