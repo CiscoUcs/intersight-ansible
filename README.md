@@ -52,6 +52,8 @@ library = <path to intersight-ansible clone>/library
 
 ### usage
 
+Authentication with the Intersight API requires that use of API keys that should be generated within the Intersight UI.  See (https://intersight.com/help) or (https://communities.cisco.com/docs/DOC-76947) for more information on generating and using API keys.
+If you do not have an Intersight account, you can create one and claim devices in Intersight using the DevNet Intersight Sandbox at https://devnetsandbox.cisco.com/RM/Diagram/Index/a63216d2-e891-4856-9f27-309ca61ec862?diagramType=Topology
 Because Intersight has a single API endpoint, minimal setup is required in playbooks or variables to access the API.  Here's an example playbook:
 ```
 ---
@@ -68,11 +70,22 @@ Because Intersight has a single API endpoint, minimal setup is required in playb
         ...
 ```
 
-Authentication with the Intersight API requires that use of API keys that should be generated within the Intersight UI.  See (https://intersight.com/help) for more information on generating and using API keys.
-
-localhost (the Ansible controller) can be used without the need to specify any hosts or inventory.  Here's an example command line for running the example playbook in this repo to configure a Server Profile with a BIOS policy also configured:
+localhost (the Ansible controller) can be used without the need to specify any hosts or inventory.  Hosts can also be specified to perform parallel actions.  A complete example of HyperFlex Edge Cluster deployment is provided through the following files in this repository:
 ```
-ansible-playbook example_server_profile_with_bios_policy.yml
+inventory - specifies the groups and specific hosts used to deploy multiple HX Edge Clusters
+group_vars/all - HX policy variables common to all HX Clusters
+host_vars/sjc07-r13-hx-edge-[1234] - Host specific variables used for each cluster.  Note that Ansible does not actually interact with different host endpoints, but using hosts and host_vars allows for configuration of multiple clusters in parallel.
+hx_policies.yml - Playbook for HX policy configuration
+hx_cluster_profiles.yml - Playbook for HX cluster profile configuration
+hx_assign_and_validate.yml - Playbook for HX server assignment to a profile and validate action.
+hx_deploy.yml - Playbook for HX cluster deployment.
+```
+You will need to cusomtize the group_vars and host_vars files with your API key information and with server/policy/profile settings for your HX Edge environment.
+
+Here are example command lines for running the hx_policies.yml and hx_cluster_profiles.yml playbooks to configure HyperFlex policies and cluster profiles:
+```
+ansible-playbook -i inventory hx_policies.yml
+ansible-playbook -i inventory hx_cluster_profiles.yml
 ```
 
 # Community:
