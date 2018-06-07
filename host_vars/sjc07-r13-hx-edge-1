@@ -1,6 +1,8 @@
 ---
 # profile vars
 hx_profile_name: sjc07-r13-hx-edge-1
+hx_mgmt_platform: EDGE
+hx_profile_description: 3 node Edge M5 cluster
 mgmt_ip: 172.28.224.164
 hx_storage_vlan: 500
 # node config

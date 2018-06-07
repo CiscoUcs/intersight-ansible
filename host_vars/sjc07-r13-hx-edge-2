@@ -1,0 +1,19 @@
+---
+# profile vars
+hx_profile_name: sjc07-r13-hx-edge-2
+hx_mgmt_platform: EDGE
+hx_profile_description: 3 node Edge M5 cluster
+mgmt_ip: 172.28.224.171
+hx_storage_vlan: 501
+# node config
+hx_node_config_policy: sjc07-r13-hx-edge-2-node-config-policy
+hx_mgmt_ip_start: 172.28.224.165
+hx_mgmt_ip_end: 172.28.224.167
+hx_mgmt_netmask: 255.255.254.0
+hx_mgmt_gateway: 172.28.224.1
+hx_dp_ip_start: 172.28.224.168
+hx_dp_ip_end: 172.28.224.170
+# server names (SNs)
+hx_server_1: C220-WZP2204097Z
+hx_server_2: C220-WZP2204090C
+hx_server_3: C220-WZP220400B3

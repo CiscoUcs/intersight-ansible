@@ -1,35 +1,31 @@
 # connection vars
 api_private_key: <path to private key file>
 api_key_id: <api key id>
-ansible_python_interpreter: /usr/local/opt/python/libexec/bin/python
-# profile vars
-hx_mgmt_platform: EDGE
-hx_profile_description: 3 node Edge M5 cluster
 # credential policy
-hx_local_credential_policy: sjc07-hx-edge-local-credential-policy
+hx_local_credential_policy: hx-local-credential-policy
 hx_hypervisor_admin: root
 hx_hypervisor_password: <password>
 hx_dp_root_password: <password>
 # sys config
-hx_sys_config_policy: sjc07-hx-edge-sys-config-policy
+hx_sys_config_policy: hx-sys-config-policy
 hx_sys_config_timezone: America/Los_Angeles
 hx_sys_config_dns_servers:
 - 172.22.249.101
 hx_sys_config_ntp_servers:
 - ntp.esl.cisco.com
 # vcenter config
-hx_vcenter_config_policy: sjc07-hx-edge-vcenter-config-policy
+hx_vcenter_config_policy: hx-vcenter-config-policy
 hx_vcenter_hostname: vcenter65.ucsdemo.cisco.com
 hx_vcenter_username: <username>
 hx_vcenter_password: <password>
 hx_vcenter_datacenter: SJC07
 # storage policy
-hx_cluster_storage_policy: sjc07-hx-edge-cluster-storage-policy
+hx_cluster_storage_policy: hx-cluster-storage-policy
 # proxy settings
-hx_proxy_setting_policy: sjc07-hx-edge-proxy-setting-policy
+hx_proxy_setting_policy: hx-proxy-setting-policy
 hx_proxy_setting_hostname: proxy-wsa.esl.cisco.com
 hx_proxy_setting_port: 80
 # cluster network policy
-hx_cluster_network_policy: sjc07-hx-edge-cluster-network-policy
+hx_cluster_network_policy: hx-cluster-network-policy
 # lab config uses trunk or access ports with native vlans and no ESX tagging is needed
 hx_mgmt_vlan: 0
