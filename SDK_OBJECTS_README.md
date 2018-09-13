@@ -1,35 +1,10 @@
-# intersight-ansible
-* Ansible Modules for Cisco Intersight.
+# intersight-ansible (based on the Python SDK)
+* Ansible Modules for Cisco Intersight that use the Python SDK.
 * Apache License, Version 2.0 (the "License") 
 
-## News
+### Previous Development Work
 
-This repo represents the working copy of modules for Cisco Intersight that will submitted to Ansible in the future.  This repo can be used to provide Cisco Intersight modules before their inclusion in official Ansible releases.
-
-There is currently not support for scripted install/uninstall to avoid collision with Ansible hosted modules and ongoing maintenance.  You can specfiy this repo as a library and module_utils location with env variables or command line options (e.g., ANSIBLE_LIBRARY=./library ansible-playbook ..).  Alternatively, your .ansible.cfg file can be updated to use this repo as the library path with the following:
-```
-[defaults]
-library = <path to intersight-ansible clone>/library
-```
-
-### Current Development Status
-
-| Configuration Category | Configuration Task | Module Name | Status (planned for Ansible 2.6, Proof of Concept, TBD |
-| ---------------------- | ------------------ | ----------- | ------ |
-| General purpose object config | Any (with user provided data) | intersight_objects | Planned for 2.6 |
-
-### Ansible Development Notes
-
-Modules in development follow processes documented at http://docs.ansible.com/ansible/latest/dev_guide/developing_modules_general.html.  The modules support ansible-doc, and when submitted to Ansible they must pass Ansible CI testing and have integration tests.
-
-When developing modules in this repository, here are a few helpful commands to sanity check the code and documentation (replace module_name with your module (e.g., intersight_objects)).  Ansible modules won't generally be pylint or pycodestyle (PEP8) clean without disabling several of the checks:
-  ```
-  pylint --disable=invalid-name,no-member,too-many-nested-blocks,redefined-variable-type,too-many-statements,too-many-branches,broad-except,line-too-long,missing-docstring,wrong-import-position,too-many-locals <module_name>.py
-  
-  pycodestyle --max-line-length 160 --config /dev/null --ignore E402 <module_name>.py
-  
-  ansible-doc <module_name>
-  ```
+Install and usage information below is specific to the intersight_objects module that depends on the Intersight Python SDK.  The intersight_rest_api module (documented on the main README) has detailed information on using Ansible without the need for the Python SDK.
 
 ### install
 - ansible must be installed
