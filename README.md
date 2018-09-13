@@ -6,7 +6,9 @@
 
 This repo represents the working copy of modules for Cisco Intersight that will submitted to Ansible in the future.  This repo can be used to provide Cisco Intersight modules before their inclusion in official Ansible releases.
 
-There is currently not support for scripted install/uninstall to avoid collision with Ansible hosted modules and ongoing maintenance.  You can specfiy this repo as a library and module_utils location with env variables or command line options (e.g., ANSIBLE_LIBRARY=./library ansible-playbook ..).  Alternatively, your .ansible.cfg file can be updated to use this repo as the library path with the following:
+There is currently not support for scripted install/uninstall to avoid collision with Ansible hosted modules and ongoing maintenance.  If you are running playbooks from the top-level directory of this repository (with library and module_utils subdirectories) you should not need any other setup to use the modules.
+
+If needed, you can specfiy this repo as a library and module_utils location with env variables or command line options (e.g., ANSIBLE_LIBRARY=./library ansible-playbook ..).  Alternatively, your .ansible.cfg file can be updated to use this repo as the library path with the following:
 ```
 [defaults]
 library = <path to intersight-ansible clone>/library
@@ -16,7 +18,7 @@ library = <path to intersight-ansible clone>/library
 
 | Configuration Category | Configuration Task | Module Name | Status (planned for Ansible 2.6, Proof of Concept, TBD |
 | ---------------------- | ------------------ | ----------- | ------ |
-| General purpose object config | Any (with user provided data) | intersight_objects | Planned for 2.6 |
+| General purpose resource config | Any (with user provided data) | intersight_rest_api | Planned for 2.8 |
 
 ### Ansible Development Notes
 
@@ -36,18 +38,9 @@ When developing modules in this repository, here are a few helpful commands to s
 ```
 sudo pip install ansible
 ```
-- you will also need the Intersight Python SDK.
-```
-sudo pip install git+https://github.com/CiscoUcs/intersight-python.git
-```
 - clone this repository 
 ```
 git clone https://github.com/ciscoucs/intersight-ansible
-```
-- Specfiy this repository as a library location in your .ansible.cfg file
-```
-[defaults]
-library = <path to intersight-ansible clone>/library
 ```
 
 ### usage
@@ -61,31 +54,26 @@ Because Intersight has a single API endpoint, minimal setup is required in playb
   connection: local
   gather_facts: no
   tasks:
-  - name: Configure Server Profile
-    intersight_objects:
+  - name: Configure Boot Policy
+    intersight_rest_api:
       api_private_key: <path to your private key>
       api_key_id: <your public key id>
-      objects:
-      - {
-        ...
+      resource_path: /boot/PrecisionPolicies
+      api_body: {
 ```
 
-localhost (the Ansible controller) can be used without the need to specify any hosts or inventory.  Hosts can also be specified to perform parallel actions.  A complete example of HyperFlex Edge Cluster deployment is provided through the following files in this repository:
-```
-inventory - specifies the groups and specific hosts used to deploy multiple HX Edge Clusters
-group_vars/all - HX policy variables common to all HX Clusters
-host_vars/sjc07-r13-hx-edge-[1234] - Host specific variables used for each cluster.  Note that Ansible does not actually interact with different host endpoints, but using hosts and host_vars allows for configuration of multiple clusters in parallel.
-hx_policies.yml - Playbook for HX policy configuration
-hx_cluster_profiles.yml - Playbook for HX cluster profile configuration
-hx_assign_and_validate.yml - Playbook for HX server assignment to a profile and validate action.
-hx_deploy.yml - Playbook for HX cluster deployment.
-```
-You will need to cusomtize the group_vars and host_vars files with your API key information and with server/policy/profile settings for your HX Edge environment.
+localhost (the Ansible controller) can be used without the need to specify any hosts or inventory.  Hosts can also be specified to perform parallel actions.  An example of Server Firmware Update on multiple servers is provided by the rest_update_server.yml playbook:
 
-Here are example command lines for running the hx_policies.yml and hx_cluster_profiles.yml playbooks to configure HyperFlex policies and cluster profiles:
+You will need to provide your own inventory file and cusomtize any variables in the playbook with settings for your environment.  Here is an example inventory file with 2 servers identified by name as shown in the Intersight UI:
 ```
-ansible-playbook -i inventory hx_policies.yml
-ansible-playbook -i inventory hx_cluster_profiles.yml
+[servers]
+C220-WZP21420X9E
+C220M5-WZP21420XAQ
+```
+Here are example command lines for running the rest_boot_policy.yml and rest_update_server.yml playbooks to configure policies and servers in Intersight:
+```
+ansible-playbook -i inventory rest_boot_policy.yml
+ansible-playbook -i inventory rest_update_server.yml
 ```
 
 # Community:
