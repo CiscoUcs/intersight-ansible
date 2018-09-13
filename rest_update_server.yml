@@ -8,6 +8,8 @@
       api_private_key: "{{ api_private_key }}"
       api_key_id: "{{ api_key_id }}"
     target: servers
+    # set query_values to 'no' to force update
+    query_values: 'yes'
     resource_state: present
   tasks:
   - name: Set hostname
@@ -29,9 +31,9 @@
     intersight_rest_api:
       <<: *api_info
       resource_path: /firmware/Upgrades
-      # query by server returned above
       query_params:
-        $filter: "Server.Moid eq '{{ server.api_response.Moid }}'"
+        $filter: "Server.Moid eq '{{ server.api_response.Moid if (query_values == 'yes') | default(false) else omit }}'"
+      update_method: post
       # nw_upgrade_full supported in UI, nw_upgrade_mount_only has partial API support
       api_body: {
           "NetworkShare": {
