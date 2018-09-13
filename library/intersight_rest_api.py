@@ -135,7 +135,7 @@ def compare_values(expected, actual):
 
 def configure_resource(module, result, moid):
     if not module.check_mode:
-        if moid:
+        if moid and module.params['update_method'] == 'patch':
             # update the resource - user has to specify all the props they want updated
             options = {
                 'http_method': 'patch',
@@ -176,8 +176,9 @@ def main():
         api_key_id=dict(type='str', required=True),
         resource_path=dict(type='str', required=True),
         query_params=dict(type='dict', default={}),
+        update_method=dict(type='str', choices=['patch', 'post'], default='patch'),
         api_body=dict(type='dict', default={}),
-        state=dict(type='str', choices=['present', 'absent'], default='present'),
+        state=dict(type='str', choices=['absent', 'present'], default='present'),
     )
 
     module = AnsibleModule(
