@@ -9,8 +9,6 @@
       api_key_id: "{{ api_key_id }}"
     target: servers
     # set query_values to 'no' to force update
-    query_values: 'yes'
-    resource_state: present
   tasks:
   - name: Set hostname
     set_fact:
@@ -27,28 +25,24 @@
   - debug:
       msg: "Server moid {{ server.api_response.Moid }}"
     when: server.api_response.Moid is defined
-  - name: Update server firmware
+  - name: Assign server
     intersight_rest_api:
       <<: *api_info
-      resource_path: /firmware/Upgrades
+      resource_path: /server/Profiles
       query_params:
-        $filter: "Server.Moid eq '{{ server.api_response.Moid if (query_values == 'yes') | default(false) else omit }}'"
-      update_method: post
-      # nw_upgrade_full supported in UI, nw_upgrade_mount_only has partial API support
+        $filter: "Name eq '{{ server_profile }}'"
       api_body: {
-          "NetworkShare": {
-              "MapType": "nfs",
-              "Upgradeoption": "nw_upgrade_mount_only",
-              "NfsServer": {
-                  "RemoteIp": "172.22.250.88",
-                  "RemoteShare": "/mnt/SHARE/ISOS/HUU/4.0",
-                  "RemoteFile": "ucs-c220m5-huu-4.0.1a.iso"
-              }
-          },
-          "UpgradeType": "network_upgrade",
-          "Server": {
-              "Moid": "{{ server.api_response.Moid }}"
-          }
+          "AssignedServer": "{{ server.api_response.Moid }}"
       }
       state: "{{ resource_state }}"
     when: server.api_response.Moid is defined
+  - name: Deploy server
+    intersight_rest_api:
+      <<: *api_info
+      resource_path: /server/Profiles
+      query_params:
+        $filter: "Name eq '{{ server_profile }}'"
+      api_body: {
+          "Action": "Deploy"
+      }
+      state: "{{ resource_state }}"
