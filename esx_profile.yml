@@ -1,0 +1,69 @@
+---
+# use localhost so these tasks only run once
+- hosts: localhost
+  connection: local
+  gather_facts: no
+  vars:
+    api_info: &api_info
+      api_private_key: "{{ api_private_key }}"
+      api_key_id: "{{ api_key_id }}"
+  tasks:
+  - name: Configure Server Profile
+    intersight_rest_api:
+      <<: *api_info
+      resource_path: /server/Profiles
+      query_params:
+        $filter: "Name eq '{{ server_profile }}'"
+      api_body: {
+          "Name": "{{ server_profile }}"
+      }
+      state: "{{ resource_state }}"
+    register: server_resp
+  - debug:
+      msg: "server profile moid {{ server_resp.api_response.Moid }}"
+    when: server_resp.api_response.Moid is defined
+  - name: Configure BIOS Policy
+    intersight_rest_api:
+      <<: *api_info
+      resource_path: /bios/Policies
+      query_params:
+        $filter: "Name eq '{{ bios_policy }}'"
+      api_body: {
+          "Profiles": [
+              {
+                  "Moid": "{{ server_resp.api_response.Moid }}",
+                  "ObjectType": "server.Profile"
+              }
+          ]
+      }
+    when: server_resp.api_response.Moid is defined
+  - name: Configure vMedia Policy
+    intersight_rest_api:
+      <<: *api_info
+      resource_path: /vmedia/Policies
+      query_params:
+        $filter: "Name eq '{{ vmedia_policy }}'"
+      api_body: {
+          "Profiles": [
+              {
+                  "Moid": "{{ server_resp.api_response.Moid }}",
+                  "ObjectType": "server.Profile"
+              }
+          ]
+      }
+    when: server_resp.api_response.Moid is defined
+  - name: Configure Boot Policy
+    intersight_rest_api:
+      <<: *api_info
+      resource_path: /boot/PrecisionPolicies
+      query_params:
+        $filter: "Name eq '{{ boot_policy }}'"
+      api_body: {
+          "Profiles": [
+              {
+                  "Moid": "{{ server_resp.api_response.Moid }}",
+                  "ObjectType": "server.Profile"
+              }
+          ]
+      }
+    when: server_resp.api_response.Moid is defined
