@@ -1,5 +1,5 @@
 ---
-# host specific tasks.  Use the servers hosts group to configure multiple targets
+# host specific policies.  Use the servers hosts group to configure multiple targets
 - hosts: "{{ target }}"
   connection: local
   gather_facts: no
@@ -24,24 +24,15 @@
   - debug:
       msg: "Server moid {{ server.api_response.Moid }}"
     when: server.api_response.Moid is defined
-  - name: Assign server
+  - name: Power cycle server
     intersight_rest_api:
       <<: *api_info
-      resource_path: /server/Profiles
+      resource_path: /compute/ServerSettings
       query_params:
-        $filter: "Name eq '{{ server_profile }}'"
+        $filter: "Server.Moid eq '{{ server.api_response.Moid }}'"
+      # nw_upgrade_full supported in UI, nw_upgrade_mount_only has partial API support
       api_body: {
-          "AssignedServer": "{{ server.api_response.Moid }}"
+          "AdminPowerState": "PowerCycle"
       }
       state: "{{ resource_state }}"
     when: server.api_response.Moid is defined
-  - name: Deploy server
-    intersight_rest_api:
-      <<: *api_info
-      resource_path: /server/Profiles
-      query_params:
-        $filter: "Name eq '{{ server_profile }}'"
-      api_body: {
-          "Action": "Deploy"
-      }
-      state: "{{ resource_state }}"

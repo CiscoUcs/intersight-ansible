@@ -20,16 +20,6 @@
           "CdnSupport": "enabled"
       }
       state: "{{ resource_state }}"
-  - name: Configure vMedia Policy
-    intersight_rest_api:
-      <<: *api_info
-      resource_path: /vmedia/Policies
-      query_params:
-        $filter: "Name eq '{{ vmedia_policy }}'"
-      api_body: {
-          "Name": "{{ vmedia_policy }}"
-      }
-      state: "{{ resource_state }}"
   - name: Configure Boot Policy
     intersight_rest_api:
       <<: *api_info
@@ -57,3 +47,36 @@
           "EnforceUefiSecureBoot": false
       }
       state: "{{ resource_state }}"
+
+# host specific policies.  Use the servers hosts group to configure multiple targets
+- hosts: "{{ target }}"
+  connection: local
+  gather_facts: no
+  vars:
+    target: servers
+  tasks:
+  - name: Set hostname
+    set_fact:
+      hostname: "{{ inventory_hostname }}"
+    when: hostname is not defined
+  - name: Configure vMedia Policy
+    intersight_rest_api:
+      <<: *api_info
+      resource_path: /vmedia/Policies
+      query_params:
+        $filter: "Name eq '{{ vmedia_policy }}'"
+      api_body: {
+          "Name": "{{ vmedia_policy }}",
+          "Mappings": [
+              {
+                  "MountProtocol": "nfs",
+                  "VolumeName": "esx-ip",
+                  "DeviceType": "cdd",
+                  "HostName": "172.22.250.88",
+                  "RemotePath": "/mnt/SHARE/ISOS/ESX",
+                  "RemoteFile": "{{ remote_file }}"
+              }
+          ]
+      }
+      state: "{{ resource_state }}"
+
