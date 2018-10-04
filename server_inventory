@@ -1,6 +1,6 @@
 [servers]
-C220-WZP21420X9E
-C220M5-WZP21420XAQ
+C220-WZP21420X9E remote_file=Vmware-ESXi-6.5a.0-4887370-Custom-Cisco-6.5.0.2.iso
+C220M5-WZP21420XAQ remote_file=Vmware-ESXi-6.5a.0-4887370-Custom-Cisco-6.5.0.2.iso
 
 [all:vars]
 api_private_key=SecretKey.txt

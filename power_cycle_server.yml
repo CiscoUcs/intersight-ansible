@@ -1,0 +1,38 @@
+---
+# host specific policies.  Use the servers hosts group to configure multiple targets
+- hosts: "{{ target }}"
+  connection: local
+  gather_facts: no
+  vars:
+    api_info: &api_info
+      api_private_key: "{{ api_private_key }}"
+      api_key_id: "{{ api_key_id }}"
+    target: servers
+  tasks:
+  - name: Set hostname
+    set_fact:
+      hostname: "{{ inventory_hostname }}"
+    when: hostname is not defined
+  # find desired servers by SN (name in the API)
+  - name: Lookup server
+    intersight_rest_api:
+      <<: *api_info
+      resource_path: /compute/PhysicalSummaries
+      query_params:
+        $filter: "Name eq '{{ hostname }}'"
+    register: server
+  - debug:
+      msg: "Server moid {{ server.api_response.Moid }}"
+    when: server.api_response.Moid is defined
+  - name: Power cycle server
+    intersight_rest_api:
+      <<: *api_info
+      resource_path: /compute/ServerSettings
+      query_params:
+        $filter: "Server.Moid eq '{{ server.api_response.Moid }}'"
+      # nw_upgrade_full supported in UI, nw_upgrade_mount_only has partial API support
+      api_body: {
+          "AdminPowerState": "PowerCycle"
+      }
+      state: "{{ resource_state }}"
+    when: server.api_response.Moid is defined

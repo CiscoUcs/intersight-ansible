@@ -27,7 +27,17 @@
       query_params:
         $filter: "Name eq '{{ vmedia_policy }}'"
       api_body: {
-          "Name": "{{ vmedia_policy }}"
+          "Name": "{{ vmedia_policy }}",
+          "Mappings": [
+              {
+                  "MountProtocol": "nfs",
+                  "VolumeName": "esx-ip",
+                  "DeviceType": "cdd",
+                  "HostName": "172.22.250.88",
+                  "RemotePath": "/mnt/SHARE/ISOS/ESX",
+                  "RemoteFile": "{{ remote_file }}"
+              }
+          ]
       }
       state: "{{ resource_state }}"
   - name: Configure Boot Policy
