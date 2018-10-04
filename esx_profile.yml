@@ -1,12 +1,13 @@
 ---
-# use localhost so these tasks only run once
-- hosts: localhost
+# host specific tasks.  Use the servers hosts group to configure multiple targets
+- hosts: "{{ target }}"
   connection: local
   gather_facts: no
   vars:
     api_info: &api_info
       api_private_key: "{{ api_private_key }}"
       api_key_id: "{{ api_key_id }}"
+    target: servers
   tasks:
   - name: Configure Server Profile
     intersight_rest_api:
