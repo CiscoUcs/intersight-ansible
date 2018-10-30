@@ -58,6 +58,17 @@ def set_private_key(prv_key):
 
     private_key = prv_key
 
+def set_api_uri(host_uri):
+    """
+    Set host URI
+
+    :param host_uri: API host uri
+    """
+
+    global host
+
+    host = host_uri
+
 def get_sha256_digest(data):
     """
     Generates a SHA256 digest from a String.
@@ -236,7 +247,8 @@ def intersight_call(http_method="", resource_path="", query_params={}, body={}, 
                 raise ValueError('Must set either *moid* or *name* with "PATCH/DELETE!"')
 
     # Check for moid and concatenate onto URL
-    if(method != "POST" and moid != None):
+    # if(method != "POST" and moid != None):
+    if(moid != None):
         resource_path += "/" + moid
 
     # Check for GET request to properly form body

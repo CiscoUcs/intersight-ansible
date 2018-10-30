@@ -1,13 +1,15 @@
 ---
-# host specific tasks.  Use the servers hosts group to configure multiple targets
+# host specific tasks to configure multiple targets
+# must run serially so policies receive all needed profile links
 - hosts: "{{ target }}"
   connection: local
   gather_facts: no
+  serial: 1
   vars:
     api_info: &api_info
       api_private_key: "{{ api_private_key }}"
       api_key_id: "{{ api_key_id }}"
-    target: servers
+    target: intersight-devnet
   tasks:
   - name: Configure Server Profile
     intersight_rest_api:
@@ -23,48 +25,93 @@
   - debug:
       msg: "server profile moid {{ server_resp.api_response.Moid }}"
     when: server_resp.api_response.Moid is defined
-  - name: Configure BIOS Policy
+# get BIOS policy and optionally append profile to list of profiles linked to policy
+  - name: Get current BIOS Policy and linked profiles
     intersight_rest_api:
       <<: *api_info
       resource_path: /bios/Policies
       query_params:
         $filter: "Name eq '{{ bios_policy }}'"
-      api_body: {
-          "Profiles": [
+    register: bios_resp
+  - name: Create payload and Configure BIOS Policy
+    block:
+      - set_fact:
+          new_payload: [
               {
                   "Moid": "{{ server_resp.api_response.Moid }}",
                   "ObjectType": "server.Profile"
               }
           ]
-      }
-    when: server_resp.api_response.Moid is defined
-  - name: Configure vMedia Policy
+      - set_fact:
+          api_payload: "{{ bios_resp.api_response.Profiles }} + {{ new_payload }}"
+      - debug: var=api_payload
+      - intersight_rest_api:
+          <<: *api_info
+          resource_path: /bios/Policies
+          query_params:
+            $filter: "Name eq '{{ bios_policy }}'"
+          update_method: post
+          api_body: {
+              "Profiles": "{{ api_payload }}"
+          }
+    when: server_resp.api_response.Moid not in (bios_resp.api_response.Profiles | map(attribute='Moid'))
+# get vMedia policy and optionally append profile to list of profiles linked to policy
+  - name: Get current vMedia Policy and linked profiles
     intersight_rest_api:
       <<: *api_info
       resource_path: /vmedia/Policies
       query_params:
         $filter: "Name eq '{{ vmedia_policy }}'"
-      api_body: {
-          "Profiles": [
+    register: vmedia_resp
+  - name: Create payload and Configure vMedia Policy
+    block:
+      - set_fact:
+          new_payload: [
               {
                   "Moid": "{{ server_resp.api_response.Moid }}",
                   "ObjectType": "server.Profile"
               }
           ]
-      }
-    when: server_resp.api_response.Moid is defined
-  - name: Configure Boot Policy
+      - set_fact:
+          api_payload: "{{ vmedia_resp.api_response.Profiles }} + {{ new_payload }}"
+      - debug: var=api_payload
+      - intersight_rest_api:
+          <<: *api_info
+          resource_path: /vmedia/Policies
+          query_params:
+            $filter: "Name eq '{{ vmedia_policy }}'"
+          update_method: post
+          api_body: {
+              "Profiles": "{{ api_payload }}"
+          }
+    when: server_resp.api_response.Moid not in (vmedia_resp.api_response.Profiles | map(attribute='Moid'))
+# get boot policy and optionally append profile to list of profiles linked to policy
+  - name: Get current boot Policy and linked profiles
     intersight_rest_api:
       <<: *api_info
       resource_path: /boot/PrecisionPolicies
       query_params:
         $filter: "Name eq '{{ boot_policy }}'"
-      api_body: {
-          "Profiles": [
+    register: boot_resp
+  - name: Create payload and Configure boot Policy
+    block:
+      - set_fact:
+          new_payload: [
               {
                   "Moid": "{{ server_resp.api_response.Moid }}",
                   "ObjectType": "server.Profile"
               }
           ]
-      }
-    when: server_resp.api_response.Moid is defined
+      - set_fact:
+          api_payload: "{{ boot_resp.api_response.Profiles }} + {{ new_payload }}"
+      - debug: var=api_payload
+      - intersight_rest_api:
+          <<: *api_info
+          resource_path: /boot/PrecisionPolicies
+          query_params:
+            $filter: "Name eq '{{ boot_policy }}'"
+          update_method: post
+          api_body: {
+              "Profiles": "{{ api_payload }}"
+          }
+    when: server_resp.api_response.Moid not in (boot_resp.api_response.Profiles | map(attribute='Moid'))

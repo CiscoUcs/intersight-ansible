@@ -1,5 +1,5 @@
 ---
-# host specific tasks.  Use the servers hosts group to configure multiple targets
+# host specific tasks to configure multiple targets
 - hosts: "{{ target }}"
   connection: local
   gather_facts: no
@@ -7,7 +7,7 @@
     api_info: &api_info
       api_private_key: "{{ api_private_key }}"
       api_key_id: "{{ api_key_id }}"
-    target: servers
+    target: intersight-devnet
   tasks:
   - name: Set hostname
     set_fact:

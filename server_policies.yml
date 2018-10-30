@@ -1,13 +1,14 @@
 ---
-# shared policies, use localhost so these tasks only run once
-- hosts: localhost
+- hosts: "{{ target }}"
   connection: local
   gather_facts: no
   vars:
     api_info: &api_info
       api_private_key: "{{ api_private_key }}"
       api_key_id: "{{ api_key_id }}"
+    target: intersight-devnet
   tasks:
+# shared policies, only run once
   - name: Configure BIOS Policy
     intersight_rest_api:
       <<: *api_info
@@ -20,6 +21,7 @@
           "CdnSupport": "enabled"
       }
       state: "{{ resource_state }}"
+    run_once: true
   - name: Configure Boot Policy
     intersight_rest_api:
       <<: *api_info
@@ -47,18 +49,8 @@
           "EnforceUefiSecureBoot": false
       }
       state: "{{ resource_state }}"
-
-# host specific policies.  Use the servers hosts group to configure multiple targets
-- hosts: "{{ target }}"
-  connection: local
-  gather_facts: no
-  vars:
-    target: servers
-  tasks:
-  - name: Set hostname
-    set_fact:
-      hostname: "{{ inventory_hostname }}"
-    when: hostname is not defined
+    run_once: true
+# host specific policies that are run for each target
   - name: Configure vMedia Policy
     intersight_rest_api:
       <<: *api_info
@@ -79,4 +71,3 @@
           ]
       }
       state: "{{ resource_state }}"
-
