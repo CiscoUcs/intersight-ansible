@@ -135,10 +135,10 @@ def compare_values(expected, actual):
 
 def configure_resource(module, result, moid):
     if not module.check_mode:
-        if moid and module.params['update_method'] == 'patch':
+        if moid:
             # update the resource - user has to specify all the props they want updated
             options = {
-                'http_method': 'patch',
+                'http_method': module.params['update_method'],
                 'resource_path': module.params['resource_path'],
                 'body': module.params['api_body'],
                 'moid': moid,
@@ -191,6 +191,7 @@ def main():
 
     intersight.set_private_key(open(module.params['api_private_key'], 'r').read())
     intersight.set_public_key(module.params['api_key_id'])
+    intersight.set_api_uri(module.params['api_uri'])
 
     result = dict(changed=False)
     result['api_response'] = {}
