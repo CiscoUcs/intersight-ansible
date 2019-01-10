@@ -55,7 +55,8 @@ intersight_argument_spec = dict(
     api_private_key=dict(type='path', required=True),
     api_uri=dict(type='str', default='https://intersight.com/api/v1'),
     api_key_id=dict(type='str', required=True),
-    secure=dict(type='bool', default=True)
+    secure=dict(type='bool', default=True),
+    use_proxy=dict(type='bool', default=True),
 )
 
 
@@ -119,6 +120,7 @@ class IntersightModule():
         self.public_key = self.module.params['api_key_id']
         self.private_key = open(self.module.params['api_private_key'], 'r').read()
         self.secure = self.module.params['secure']
+        self.use_proxy = self.module.params['use_proxy']
         self.digest_algorithm = 'rsa-sha256'
         self.response_list = []
 
@@ -202,7 +204,7 @@ class IntersightModule():
         return api_response.json()
 
 
-    def intersight_call(self, http_method="", resource_path="", query_params={}, body={}, moid=None, name=None, proxy=None):
+    def intersight_call(self, http_method="", resource_path="", query_params={}, body={}, moid=None, name=None):
         """
         Invoke the Intersight API
 
@@ -236,12 +238,9 @@ class IntersightModule():
         if(body != {} and not isinstance(body, dict)):
             raise TypeError('The *body* value must be of type "<dict>"')
 
-        # Verify that proxy is either null, or is a valid <str> object & create https_proxy object
-        if proxy is not None:
-            if not isinstance(proxy, str):
-                raise TypeError('The *proxy* value must be of type "<str>"')
-            else:
-                https_proxy = {"https": proxy}
+        if self.use_proxy:
+            # use system defined proxy
+            https_proxy = requests.utils.get_environ_proxies(self.host)
         else:
             https_proxy = {}
 

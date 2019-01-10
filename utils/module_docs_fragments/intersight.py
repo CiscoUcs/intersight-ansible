@@ -49,5 +49,11 @@ options:
   secure:
     description:
     - Boolean control for verifying the api_uri TLS certificate
+    type: bool
+    default: yes
+  use_proxy:
+    description:
+    - If C(no), it will not use a proxy, even if one is defined in an environment variable on the target hosts.
+    type: bool
     default: yes
 '''
