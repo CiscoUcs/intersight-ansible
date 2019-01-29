@@ -1,0 +1,27 @@
+---
+- hosts: "{{ target | default('all') }}"
+  connection: local
+  gather_facts: false
+  vars:
+    api_info: &api_info
+      api_private_key: "{{ api_private_key | default('~/Downloads/TMEIntersightSecretKey.txt') }}"
+      api_key_id: "{{ api_key_id | default('5c4b7c1d7564612d30f7de47/5c4b957a7564612d30f7e7ad/5c4f6ec47564612d30f80623')  }}"
+      api_uri: "{{ appliance_uri | default('https://tme-intersight.ucsdemo.cisco.com/api/v1') }}"
+      secure: "{{ appliance_secure | default(false) }}"
+    username: "{{ intersight_username | default('admin') }}"
+    password: "{{ intersight_password | default('password') }}"
+    platform: "{{ platform_type | default('UCSFI') }}"
+  tasks:
+    - name: Claim device on the appliance
+      intersight_rest_api:
+        <<: *api_info
+        resource_path: /appliance/DeviceClaims
+        query_params:
+          $filter: "Hostname eq '{{ inventory_hostname }}'"
+        api_body: {
+          "Username": "{{ username }}",
+          "Password": "{{ password }}",
+          "Hostname": "{{ inventory_hostname }}",
+          "PlatformType": "{{ platform }}"
+        }
+      delegate_to: localhost
