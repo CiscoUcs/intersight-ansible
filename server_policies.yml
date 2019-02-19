@@ -1,73 +1,27 @@
 ---
-- hosts: "{{ target }}"
+# shared policies, only run once from localhost
+- hosts: localhost
   connection: local
-  gather_facts: no
+  gather_facts: false
   vars:
     api_info: &api_info
-      api_private_key: "{{ api_private_key }}"
-      api_key_id: "{{ api_key_id }}"
-    target: intersight-devnet
+      api_private_key: "{{ var_api_private_key | default('~/Downloads/SSOSecretKey.txt') }}"
+      api_key_id: "{{ var_api_key_id | default('596cc79e5d91b400010d15ad/596cc7945d91b400010d154e/5b6275df3437357030a7795f') }}"
+      api_key_uri: "{{ var_api_key_uri | default(omit) }}"
+      validate_certs: "{{ var_validate_certs | default(omit) }}"
+      state: "{{ var_state | default(omit) }}"
   tasks:
-# shared policies, only run once
-  - name: Configure BIOS Policy
-    intersight_rest_api:
-      <<: *api_info
-      resource_path: /bios/Policies
-      query_params:
-        $filter: "Name eq '{{ bios_policy }}'"
-      api_body: {
-          "Name": "{{ bios_policy }}",
-          "CdnEnable": "enabled",
-          "CdnSupport": "enabled"
-      }
-      state: "{{ resource_state }}"
-    run_once: true
-  - name: Configure Boot Policy
-    intersight_rest_api:
-      <<: *api_info
-      resource_path: /boot/PrecisionPolicies
-      query_params:
-        $filter: "Name eq '{{ boot_policy }}'"
-      api_body: {
-          "Name": "{{ boot_policy }}",
-          "BootDevices": [
-              {
-                  "ObjectType": "boot.VirtualMedia",
-                  "Enabled": true,
-                  "Name": "remote-vmedia",
-                  "Subtype": "cimc-mapped-dvd"
-              },
-              {
-                  "ObjectType": "boot.LocalDisk",
-                  "Enabled": true,
-                  "Name": "boot-lun",
-                  "Bootloader": null,
-                  "Slot": "MRAID"
-              }
-          ],
-          "ConfiguredBootMode": "Legacy",
-          "EnforceUefiSecureBoot": false
-      }
-      state: "{{ resource_state }}"
-    run_once: true
-# host specific policies that are run for each target
-  - name: Configure vMedia Policy
-    intersight_rest_api:
-      <<: *api_info
-      resource_path: /vmedia/Policies
-      query_params:
-        $filter: "Name eq '{{ vmedia_policy }}'"
-      api_body: {
-          "Name": "{{ vmedia_policy }}",
-          "Mappings": [
-              {
-                  "MountProtocol": "nfs",
-                  "VolumeName": "esx-ip",
-                  "DeviceType": "cdd",
-                  "HostName": "172.22.250.88",
-                  "RemotePath": "/mnt/SHARE/ISOS/ESX",
-                  "RemoteFile": "{{ remote_file }}"
-              }
-          ]
-      }
-      state: "{{ resource_state }}"
+    - block:
+        - import_role:
+            name: policies/server_policies/boot_order
+          vars:
+            <<: *api_info
+            boot_policy: vmedia-local-mraid
+            disk_slot: MRAID
+        - import_role:
+            name: policies/server_policies/boot_order
+          vars:
+            <<: *api_info
+            boot_policy: vmedia-local-hba
+            disk_slot: HBA
+      tags: ['boot_order']

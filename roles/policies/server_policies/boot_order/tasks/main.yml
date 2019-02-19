@@ -1,0 +1,30 @@
+---
+- name: "Configure {{ boot_policy }} Boot Policy"
+  intersight_rest_api:
+    api_private_key: "{{ api_private_key }}"
+    api_key_id: "{{ api_key_id }}"
+    api_key_uri: "{{ api_key_uri }}"
+    validate_certs: "{{ validate_certs }}"
+    state: "{{ state }}"
+    resource_path: /boot/PrecisionPolicies
+    query_params:
+      $filter: "Name eq '{{ boot_policy }}'"
+    api_body: {
+      "Name": "{{ boot_policy }}",
+      "ConfiguredBootMode": "Legacy",
+      "BootDevices": [
+        {
+          "ObjectType": "boot.VirtualMedia",
+          "Enabled": true,
+          "Name": "remote-vmedia",
+          "Subtype": "cimc-mapped-dvd"
+        },
+        {
+          "ObjectType": "boot.LocalDisk",
+          "Enabled": true,
+          "Name": "localdisk",
+          "Slot": "{{ disk_slot }}",
+          "Bootloader": null
+        }
+      ],
+    }

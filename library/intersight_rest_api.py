@@ -6,7 +6,7 @@
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
-ANSIBLE_METADATA = {'metatdata_version': '1.1',
+ANSIBLE_METADATA = {'metadata_version': '1.1',
                     'status': ['preview'],
                     'supported_by': 'community'}
 
@@ -15,12 +15,37 @@ DOCUMENTATION = r'''
 module: intersight_rest_api
 short_description: REST API configuration for Cisco Intersight
 description:
-- REST API configuration for Cisco Intersight.
-- All REST API resources and properties must be directly specified.
-- For more information see L(Cisco Intersight,https://intersight.com/help).
+- Direct REST API configuration for Cisco Intersight.
+- All REST API resources and properties must be specified.
+- For more information see L(Cisco Intersight,https://intersight.com/apidocs).
 extends_documentation_fragment: intersight
 options:
-  
+  resource_path:
+    description:
+    - Resource URI being configured related to api_uri.
+    type: str
+    required: yes
+  query_params:
+    description:
+    - Query parameters for the Intersight API query languange.
+    type: dict
+  update_method:
+    description:
+    - The HTTP method used for update operations.
+    - Some Intersight resources require POST operations for modifications.
+    type: str
+    choices: [ patch, post ]
+    default: patch
+  api_body:
+    description:
+    - The paylod for API requests used to modify resources.
+    type: dict
+  state:
+    description:
+    - If C(present), will verify the resource is present and will create if needed.
+    - If C(absent), will verify the resource is absent and will delete if needed.
+    choices: [present, absent]
+    default: present
 author:
 - David Soper (@dsoper2)
 - CiscoUcs (@CiscoUcs)
@@ -32,39 +57,72 @@ EXAMPLES = r'''
   intersight_rest_api:
     api_private_key: "{{ api_private_key }}"
     api_key_id: "{{ api_key_id }}"
+    api_key_uri: "{{ api_key_uri }}"
+    validate_certs: "{{ validate_certs }}"
     resource_path: /boot/PrecisionPolicies
     query_params:
-      $filter: "Name eq 'vmedia-hdd'"
+      $filter: "Name eq 'vmedia-localdisk'"
     api_body: {
-        "Name": "vmedia-hdd",
-        "BootDevices": [
-            {
-                "ObjectType": "boot.VirtualMedia",
-                "Enabled": true,
-                "Name": "remote-vmedia",
-                "Subtype": "cimc-mapped-dvd"
-            },
-            {
-                "ObjectType": "boot.LocalDisk",
-                "Enabled": true,
-                "Name": "boot-lun",
-                "Bootloader": null,
-                "Slot": "MRAID"
-            }
-        ],
-        "ConfiguredBootMode": "Legacy",
-        "EnforceUefiSecureBoot": false
+      "Name": "vmedia-hdd",
+      "ConfiguredBootMode": "Legacy",
+      "BootDevices": [
+        {
+          "ObjectType": "boot.VirtualMedia",
+          "Enabled": true,
+          "Name": "remote-vmedia",
+          "Subtype": "cimc-mapped-dvd"
+        },
+        {
+          "ObjectType": "boot.LocalDisk",
+          "Enabled": true,
+          "Name": "localdisk",
+          "Slot": "MRAID",
+          "Bootloader": null
+        }
+      ],
     }
     state: present
+
 - name: Delete Boot Policy
   intersight_rest_api:
     api_private_key: "{{ api_private_key }}"
     api_key_id: "{{ api_key_id }}"
+    api_key_uri: "{{ api_key_uri }}"
+    validate_certs: "{{ validate_certs }}"
     resource_path: /boot/PrecisionPolicies
     query_params:
-      $filter: "Name eq 'vmedia-hdd'"
+      $filter: "Name eq 'vmedia-localdisk'"
     state: absent
 '''
+
+RETURN = r'''
+api_repsonse:
+  description: The API response output returned by the specified resource.
+  returned: always
+  type: dict
+  sample:
+    "api_response": {
+      "BootDevices": [
+        {
+          "Enabled": true,
+          "Name": "remote-vmedia",
+          "ObjectType": "boot.VirtualMedia",
+          "Subtype": "cimc-mapped-dvd"
+        },
+        {
+          "Bootloader": null,
+          "Enabled": true,
+          "Name": "boot-lun",
+          "ObjectType": "boot.LocalDisk",
+          "Slot": "MRAID"
+        }
+      ],
+      "ConfiguredBootMode": "Legacy",
+      "Name": "vmedia-localdisk",
+      "ObjectType": "boot.PrecisionPolicy",
+    }
+'''
+
 
 import re
 from ansible.module_utils.remote_management.intersight import IntersightModule, intersight_argument_spec

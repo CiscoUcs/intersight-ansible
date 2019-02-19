@@ -32,30 +32,25 @@
 
 from base64 import b64encode
 from email.utils import formatdate
-from six.moves.urllib.parse import urlparse, urlencode, quote
 import re
 import json
 import hashlib
+from ansible.module_utils.six.moves.urllib.parse import urlparse, urlencode, quote
+from ansible.module_utils.urls import fetch_url
 
 try:
-    from Crypto.PublicKey import RSA
-    from Crypto.Signature import PKCS1_v1_5
-    from Crypto.Hash import SHA256
-    HAS_CRYPTO = True
+    from cryptography.hazmat.primitives import serialization, hashes
+    from cryptography.hazmat.primitives.asymmetric import padding
+    from cryptography.hazmat.backends import default_backend
+    HAS_CRYPTOGRAPHY = True
 except ImportError:
-    HAS_CRYPTO = False
-
-try:
-    import requests
-    HAS_REQUESTS = True
-except ImportError:
-    HAS_REQUESTS = False
+    HAS_CRYPTOGRAPHY = False
 
 intersight_argument_spec = dict(
     api_private_key=dict(type='path', required=True),
     api_uri=dict(type='str', default='https://intersight.com/api/v1'),
     api_key_id=dict(type='str', required=True),
-    secure=dict(type='bool', default=True),
+    validate_certs=dict(type='bool', default=True),
     use_proxy=dict(type='bool', default=True),
 )
 
@@ -68,7 +63,7 @@ def get_sha256_digest(data):
     :return: instance of digest object
     """
 
-    digest = SHA256.new()
+    digest = hashlib.sha256()
     digest.update(data.encode())
 
     return digest
@@ -112,19 +107,15 @@ class IntersightModule():
     def __init__(self, module):
         self.module = module
         self.result = dict(changed=False)
-        if not HAS_CRYPTO:
-            self.module.fail_json(msg='Crypto is required for this module')
-        if not HAS_REQUESTS:
-            self.module.fail_json(msg='Requests is required for this module')
+        if not HAS_CRYPTOGRAPHY:
+            self.module.fail_json(msg='cryptography is required for this module')
         self.host = self.module.params['api_uri']
         self.public_key = self.module.params['api_key_id']
         self.private_key = open(self.module.params['api_private_key'], 'r').read()
-        self.secure = self.module.params['secure']
-        self.use_proxy = self.module.params['use_proxy']
         self.digest_algorithm = 'rsa-sha256'
         self.response_list = []
 
-    def get_rsasig_b64encode(self, digest):
+    def get_rsasig_b64encode(self, data):
         """
         Generates an RSA Signed SHA256 digest from a String
 
@@ -132,9 +123,8 @@ class IntersightModule():
         :return: instance of digest object
         """
 
-        rsakey = RSA.importKey(self.private_key)
-        signer = PKCS1_v1_5.new(rsakey)
-        sign = signer.sign(digest)
+        rsakey = serialization.load_pem_private_key(self.private_key.encode(), None, default_backend())
+        sign = rsakey.sign(data.encode(), padding.PKCS1v15(), hashes.SHA256())
 
         return b64encode(sign)
 
@@ -147,12 +137,11 @@ class IntersightModule():
         :return: concatenated authorization header
         """
 
-        auth_str = ""
-        auth_str = auth_str + "Signature"
+        auth_str = "Signature"
 
         auth_str = auth_str + " " + "keyId=\"" + self.public_key + "\"," + "algorithm=\"" + self.digest_algorithm + "\"," + "headers=\"(request-target)"
 
-        for key, _ in hdrs.items():
+        for key, dummy in hdrs.items():
             auth_str = auth_str + " " + key.lower()
         auth_str = auth_str + "\""
 
@@ -195,16 +184,17 @@ class IntersightModule():
         """
 
         try:
-            api_response = self.intersight_call(**options)
-            if not re.match(r'2..', str(api_response.status_code)):
-                raise RuntimeError(api_response.status_code, api_response.text)
+            response, info = self.intersight_call(**options)
+            if not re.match(r'2..', str(info['status'])):
+                raise RuntimeError(info['status'], info['msg'], info['body'])
         except Exception as e:
             self.module.fail_json(msg="API error: %s " % str(e))
 
-        return api_response.json()
+        if response.length > 0:
+            return json.loads(response.read())
+        return {}
 
-
-    def intersight_call(self, http_method="", resource_path="", query_params={}, body={}, moid=None, name=None):
+    def intersight_call(self, http_method="", resource_path="", query_params=None, body=None, moid=None, name=None):
         """
         Invoke the Intersight API
 
@@ -231,25 +221,19 @@ class IntersightModule():
             raise TypeError('The *resource_path* value is required and must be of type "<str>"')
 
         # Verify the query parameters isn't empy & is a valid <dict> object
-        if(query_params != {} and not isinstance(query_params, dict)):
+        if(query_params is not None and not isinstance(query_params, dict)):
             raise TypeError('The *query_params* value must be of type "<dict>"')
 
         # Verify the body isn't empy & is a valid <dict> object
-        if(body != {} and not isinstance(body, dict)):
+        if(body is not None and not isinstance(body, dict)):
             raise TypeError('The *body* value must be of type "<dict>"')
-
-        if self.use_proxy:
-            # use system defined proxy
-            https_proxy = requests.utils.get_environ_proxies(self.host)
-        else:
-            https_proxy = {}
 
         # Verify the MOID is not null & of proper length
         if(moid is not None and len(moid.encode('utf-8')) != 24):
             raise ValueError('Invalid *moid* value!')
 
         # Check for query_params, encode, and concatenate onto URL
-        if query_params != {}:
+        if query_params is not None:
             query_path = "?" + urlencode(query_params).replace('+', '%20')
 
         # Handle PATCH/DELETE by Object "name" instead of "moid"
@@ -272,7 +256,7 @@ class IntersightModule():
             bodyString = json.dumps(body)
 
         # Concatenate URLs for headers
-        target_url = self.host + resource_path
+        target_url = self.host + resource_path + query_path
         request_target = method + " " + target_path + resource_path + query_path
 
         # Get the current GMT Date/Time
@@ -290,32 +274,19 @@ class IntersightModule():
         }
 
         string_to_sign = prepare_str_to_sign(request_target, auth_header)
-        auth_digest = get_sha256_digest(string_to_sign)
-        b64_signed_msg = self.get_rsasig_b64encode(auth_digest)
+        b64_signed_msg = self.get_rsasig_b64encode(string_to_sign)
         auth_header = self.get_auth_header(auth_header, b64_signed_msg)
 
         # Generate the HTTP requests header
         request_header = {
             'Accept': 'application/json',
+            'Content-Type': 'application/json',
             'Host': '{0}'.format(target_host),
             'Date': '{0}'.format(cdate),
             'Digest': 'SHA-256={0}'.format(b64_body_digest.decode('ascii')),
             'Authorization': '{0}'.format(auth_header),
         }
 
-        # Format HTTP request
-        http_request = requests.Request(
-            method=method,
-            url=target_url,
-            headers=request_header,
-            data=bodyString,
-            params=urlencode(query_params)
-        )
+        response, info = fetch_url(self.module, target_url, data=bodyString, headers=request_header, method=method, use_proxy=self.module.params['use_proxy'])
 
-        # Prepare & send HTTP request
-        prepared_request = http_request.prepare()
-        http_session = requests.Session()
-        response = http_session.send(prepared_request, proxies=https_proxy, verify=self.secure)
-
-        # Return requests.Response
-        return response
+        return response, info
