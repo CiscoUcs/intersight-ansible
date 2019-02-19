@@ -1,0 +1,28 @@
+---
+# retrieve facts from Intersight servers
+- hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    api_info: &api_info
+      api_private_key: "{{ api_private_key | default('~/Downloads/SSOSecretKey.txt') }}"
+      api_key_id: "{{ api_key_id | default('596cc79e5d91b400010d15ad/596cc7945d91b400010d154e/5b6275df3437357030a7795f') }}"
+      api_key_uri: "{{ api_key_uri | default(omit) }}"
+      secure: "{{ secure | default(omit) }}"
+  tasks:
+    # find all servers
+    - intersight_facts:
+        <<: *api_info
+        server_names:
+      register: all_results
+    # put standalone servers (IMC) into a file
+    - lineinfile:
+        path: "{{ playbook_dir }}/standalone_server_inventory"
+        line: "{{ item.Name }} moid={{ item.Moid }} mgmt_ip={{ item.MgmtIpAddress }}"
+        create: true
+      loop: "{{ all_results.intersight_servers | json_query(platform_query) }}"
+      loop_control:
+        label: "{{ item.Name }}"
+      vars:
+        platform_query: "[?PlatformType=='IMC']"
+      when: all_results.intersight_servers is defined

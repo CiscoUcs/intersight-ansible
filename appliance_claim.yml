@@ -4,12 +4,12 @@
   gather_facts: false
   vars:
     api_info: &api_info
-      api_private_key: "{{ api_private_key | default('~/Downloads/TMEIntersightSecretKey.txt') }}"
-      api_key_id: "{{ api_key_id | default('5c4b7c1d7564612d30f7de47/5c4b957a7564612d30f7e7ad/5c4f6ec47564612d30f80623')  }}"
-      api_uri: "{{ appliance_uri | default('https://tme-intersight.ucsdemo.cisco.com/api/v1') }}"
-      secure: "{{ appliance_secure | default(false) }}"
-    username: "{{ intersight_username | default('admin') }}"
-    password: "{{ intersight_password | default('password') }}"
+      api_private_key: "{{ api_private_key | default('/Users/dsoper/Downloads/TMEIntersightSecretKey.txt') }}"
+      api_key_id: "{{ api_key_id | default('5c6077537564612d300f2dbd/5c61a4437564612d300f3995/5c61a7e07564612d300f3da5') }}"
+      api_uri: "{{ api_uri | default('https://intersight.tmedemo.cisco.com/api/v1') }}"
+      validate_certs: "{{ validate_certs | default('false') }}"
+    username: "{{ ucs_username | default('admin') }}"
+    password: "{{ ucs_password | default('password') }}"
     platform: "{{ platform_type | default('UCSFI') }}"
   tasks:
     - name: Claim device on the appliance

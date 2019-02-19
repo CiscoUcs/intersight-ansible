@@ -6,7 +6,7 @@
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
-ANSIBLE_METADATA = {'metatdata_version': '1.1',
+ANSIBLE_METADATA = {'metadata_version': '1.1',
                     'status': ['preview'],
                     'supported_by': 'community'}
 
@@ -20,7 +20,9 @@ extends_documentation_fragment: intersight
 options:
   server_names:
     description:
-    - Server names to retrieve facts from.  An empty list will return all servers.
+    - Server names to retrieve facts from.
+    - An empty list will return all servers.
+    type: list
     required: yes
 author:
 - David Soper (@dsoper2)
@@ -29,37 +31,43 @@ version_added: '2.8'
 '''
 
 EXAMPLES = r'''
-vars:
-  api_info: &api_info
-    api_private_key: <private key PEM file>
-    api_key_id: <public key id>
-
-# Gather facts for all servers
-- intersight_facts:
-    <<: *api_info
+- name: Get facts for all servers
+  intersight_facts:
+    api_private_key: ~/Downloads/SecretKey.txt
+    api_key_id: 64612d300d0982/64612d300d0b00/64612d300d3650
     server_names:
-  delegate_to: localhost
+- debug:
+    msg: "server name {{ item.Name }}, moid {{ item.Moid }}"
+  loop: "{{ intersight_servers }}"
+  when: intersight_servers is defined
 
-# Gather facts for a list of servers
-- intersight_facts:
-    <<: *api_info
+- name: Get facts for servers by name
+  intersight_facts:
+    api_private_key: ~/Downloads/SecretKey.txt
+    api_key_id: 64612d300d0982/64612d300d0b00/64612d300d3650
     server_names:
       - SJC18-L14-UCS1-1
-      - SJC18-L14-UCS1-2
-      - SJC18-L14-UCS1-3
-      - SJC18-L14-UCS1-4
-      - SJC18-L14-UCS1-5
-      - SJC18-L14-UCS1-6
-      - SJC18-L14-UCS1-7
-      - SJC18-L14-UCS1-8
-  delegate_to: localhost
+- debug:
+    msg: "server moid {{ intersight_servers[0].Moid }}"
+  when: intersight_servers[0] is defined
+'''
 
-# Gather facts for a single service given in the inventory
-- intersight_facts:
-    <<: *api_info
-    server_names:
-      - "{{ inventory_hostname }}"
-  delegate_to: localhost
+RETURN = r'''
+intersight_servers:
+  description: A list of Intersight Servers.  See L(Cisco Intersight,https://intersight.com/apidocs) for details.
+  returned: always
+  type: complex
+  contains:
+    Name:
+      description: The name of the server.
+      returned: always
+      type: str
+      sample: SJC18-L14-UCS1-1
+    Moid:
+      description: The unique identifier of this Managed Object instance.
+      returned: always
+      type: str
+      sample: 5978bea36ad4b000018d63dc
 '''
 
 from ansible.module_utils.remote_management.intersight import IntersightModule, intersight_argument_spec
@@ -98,7 +106,7 @@ def main():
     intersight = IntersightModule(module)
 
     # one API call returning all requested servers
-    module.exit_json(ansible_facts=dict(intersight_servers=get_servers(module, intersight)))
+    module.exit_json(intersight_servers=get_servers(module, intersight))
 
 
 if __name__ == '__main__':
