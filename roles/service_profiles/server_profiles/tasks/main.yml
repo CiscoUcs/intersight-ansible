@@ -1,0 +1,101 @@
+---
+- name: "Configure {{ profile_name }} Server Profile"
+  intersight_rest_api:
+    api_private_key: "{{ api_private_key }}"
+    api_key_id: "{{ api_key_id }}"
+    api_key_uri: "{{ api_key_uri }}"
+    validate_certs: "{{ validate_certs }}"
+    state: "{{ state }}"
+    resource_path: /server/Profiles
+    query_params:
+      $filter: "Name eq 'SP-{{ inventory_hostname }}'"
+    api_body: {
+      "Name": "SP-{{ inventory_hostname }}"
+    }
+  register: profile_resp
+- debug:
+    msg: "Server profile moid {{ profile_resp.api_response.Moid }}"
+  when: profile_resp.api_response.Moid is defined
+# get boot order policy
+- name: Get current boot order policy and linked profiles
+  intersight_rest_api:
+    api_private_key: "{{ api_private_key }}"
+    api_key_id: "{{ api_key_id }}"
+    api_key_uri: "{{ api_key_uri }}"
+    validate_certs: "{{ validate_certs }}"
+    state: "{{ state }}"
+    resource_path: /boot/PrecisionPolicies
+    query_params:
+      $filter: "Name eq '{{ boot_policy }}'"
+  register: boot_order_resp
+  when: boot_policy != 'na'
+# append profile to list of profiles linked to policy
+- name: Create payload and configure boot policy
+  block:
+    - set_fact:
+        new_payload: [
+          {
+            "Moid": "{{ profile_resp.api_response.Moid }}",
+            "ObjectType": "server.Profile"
+          }
+        ]
+    - set_fact:
+        api_payload: "{{ boot_order_resp.api_response.Profiles }} + {{ new_payload }}"
+    - debug: var=api_payload
+    - intersight_rest_api:
+        api_private_key: "{{ api_private_key }}"
+        api_key_id: "{{ api_key_id }}"
+        api_key_uri: "{{ api_key_uri }}"
+        validate_certs: "{{ validate_certs }}"
+        state: "{{ state }}"
+        resource_path: /boot/PrecisionPolicies
+        query_params:
+          $filter: "Name eq '{{ boot_policy }}'"
+        update_method: post
+        api_body: {
+          "Profiles": "{{ api_payload }}"
+        }
+  when:
+    - boot_policy != 'na'
+    - profile_resp.api_response.Moid not in (boot_order_resp.api_response.Profiles | map(attribute='Moid'))
+- name: Assign server
+  intersight_rest_api:
+    api_private_key: "{{ api_private_key }}"
+    api_key_id: "{{ api_key_id }}"
+    api_key_uri: "{{ api_key_uri }}"
+    validate_certs: "{{ validate_certs }}"
+    state: "{{ state }}"
+    resource_path: /server/Profiles
+    query_params:
+      $filter: "Name eq '{{ profile_name }}'"
+    api_body: {
+      "AssignedServer": {
+        "Moid": "{{ server_moid }}"
+      }
+    }
+  register: assign_resp
+# Deploy when tag is set or when changes to the profile have occurred
+- set_fact:
+    assign_resp:
+      api_response:
+        ConfigChanges:
+          Changes:
+            - true
+  tags: ['never', 'deploy']
+- name: Deploy server
+  intersight_rest_api:
+    api_private_key: "{{ api_private_key }}"
+    api_key_id: "{{ api_key_id }}"
+    api_key_uri: "{{ api_key_uri }}"
+    validate_certs: "{{ validate_certs }}"
+    state: "{{ state }}"
+    resource_path: /server/Profiles
+    query_params:
+      $filter: "Name eq '{{ profile_name }}'"
+    api_body: {
+      "Action": "Deploy"
+    }
+  when:
+    - assign_resp is defined
+    - assign_resp.api_response.ConfigChanges.Changes | default([]) | length > 0
+  tags: ['deploy']

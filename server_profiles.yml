@@ -1,0 +1,19 @@
+---
+- hosts: all
+  connection: local
+  gather_facts: false
+  vars:
+    api_info: &api_info
+      api_private_key: "{{ var_api_private_key | default('~/Downloads/SSOSecretKey.txt') }}"
+      api_key_id: "{{ var_api_key_id | default('596cc79e5d91b400010d15ad/596cc7945d91b400010d154e/5b6275df3437357030a7795f') }}"
+      api_key_uri: "{{ var_api_key_uri | default(omit) }}"
+      validate_certs: "{{ var_validate_certs | default(omit) }}"
+      state: "{{ var_state | default(omit) }}"
+  tasks:
+    - block:
+        - import_role:
+            name: service_profiles/server_profiles
+          vars:
+            <<: *api_info
+            profile_name: "SP-{{ inventory_hostname }}"
+      delegate_to: localhost

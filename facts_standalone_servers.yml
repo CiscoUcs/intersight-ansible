@@ -18,11 +18,14 @@
     # put standalone servers (IMC) into a file
     - lineinfile:
         path: "{{ playbook_dir }}/standalone_server_inventory"
-        line: "{{ item.Name }} moid={{ item.Moid }} mgmt_ip={{ item.MgmtIpAddress }}"
+        line: "{{ item.Name }} server_moid={{ item.Moid }} model={{ item.Model }} boot_policy={{ (item.Tags | items2dict(key_name='Key', value_name='Value'))['boot_policy'] | default('na') }}"
         create: true
-      loop: "{{ all_results.intersight_servers | json_query(platform_query) }}"
+      # ansible and jmespath contains have type differences, so to/from_json used
+      loop: "{{ all_results.intersight_servers | json_query(platform_query) | to_json | from_json | json_query(model_query) }}"
       loop_control:
         label: "{{ item.Name }}"
       vars:
+        # filter for IMC and C-Series only (no HX)
         platform_query: "[?PlatformType=='IMC']"
+        model_query: "[?contains(Model, 'UCSC-C')]"
       when: all_results.intersight_servers is defined
