@@ -56,8 +56,8 @@
           "Profiles": "{{ api_payload }}"
         }
   when:
-    - profile_resp.api_response.Moid not in (boot_order_resp.api_response.Profiles | map(attribute='Moid'))
     - boot_policy != 'na'
+    - profile_resp.api_response.Moid not in (boot_order_resp.api_response.Profiles | map(attribute='Moid'))
 - name: Assign server
   intersight_rest_api:
     api_private_key: "{{ api_private_key }}"
