@@ -25,3 +25,10 @@
             boot_policy: vmedia-local-hba
             disk_slot: HBA
       tags: ['boot_order']
+    - import_role:
+        name: policies/server_policies/virtual_media
+      vars:
+        <<: *api_info
+        vmedia_policy: nfs-esx-6-7U1
+        remote_file: VMware_ESXi_6.7.0_10302608_Custom_Cisco_6.7.1.1.iso
+      tags: ['virtual_media']

@@ -16,7 +16,7 @@
 - debug:
     msg: "Server profile moid {{ profile_resp.api_response.Moid }}"
   when: profile_resp.api_response.Moid is defined
-# get boot order policy
+# Get boot order policy
 - name: Get current boot order policy and linked profiles
   intersight_rest_api:
     api_private_key: "{{ api_private_key }}"
@@ -29,7 +29,7 @@
       $filter: "Name eq '{{ boot_policy }}'"
   register: boot_order_resp
   when: boot_policy != 'na'
-# append profile to list of profiles linked to policy
+# Append profile to list of profiles linked to policy
 - name: Create payload and configure boot policy
   block:
     - set_fact:
@@ -58,6 +58,47 @@
   when:
     - boot_policy != 'na'
     - profile_resp.api_response.Moid not in (boot_order_resp.api_response.Profiles | map(attribute='Moid'))
+# Get virtual media policy
+- name: Get current virtual media policy and linked profiles
+  intersight_rest_api:
+    api_private_key: "{{ api_private_key }}"
+    api_key_id: "{{ api_key_id }}"
+    api_key_uri: "{{ api_key_uri }}"
+    validate_certs: "{{ validate_certs }}"
+    state: "{{ state }}"
+    resource_path: /vmedia/Policies
+    query_params:
+      $filter: "Name eq '{{ virtual_media }}'"
+  register: virtual_media_resp
+# Append profile to list of profiles linked to policy
+- name: Create payload and configure virtual media policy
+  block:
+    - set_fact:
+        new_payload: [
+          {
+            "Moid": "{{ profile_resp.api_response.Moid }}",
+            "ObjectType": "server.Profile"
+          }
+        ]
+    - set_fact:
+        api_payload: "{{ virtual_media_resp.api_response.Profiles }} + {{ new_payload }}"
+    - debug: var=api_payload
+    - intersight_rest_api:
+        api_private_key: "{{ api_private_key }}"
+        api_key_id: "{{ api_key_id }}"
+        api_key_uri: "{{ api_key_uri }}"
+        validate_certs: "{{ validate_certs }}"
+        state: "{{ state }}"
+        resource_path: /vmedia/Policies
+        query_params:
+          $filter: "Name eq '{{ virtual_media }}'"
+        update_method: post
+        api_body: {
+          "Profiles": "{{ api_payload }}"
+        }
+  when:
+    - profile_resp.api_response.Moid not in (virtual_media_resp.api_response.Profiles | map(attribute='Moid'))
+# Assign server to profile
 - name: Assign server
   intersight_rest_api:
     api_private_key: "{{ api_private_key }}"
