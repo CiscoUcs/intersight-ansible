@@ -97,7 +97,6 @@
           "Profiles": "{{ api_payload }}"
         }
   when:
-    - boot_policy != 'na'
     - profile_resp.api_response.Moid not in (virtual_media_resp.api_response.Profiles | map(attribute='Moid'))
 # Assign server to profile
 - name: Assign server
