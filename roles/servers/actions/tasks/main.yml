@@ -1,0 +1,29 @@
+---
+- name: "Configure {{ inventory_hostname }} power state"
+  intersight_rest_api:
+    api_private_key: "{{ api_private_key }}"
+    api_key_id: "{{ api_key_id }}"
+    api_key_uri: "{{ api_key_uri }}"
+    validate_certs: "{{ validate_certs }}"
+    state: "{{ state }}"
+    resource_path: /compute/ServerSettings
+    query_params:
+      $filter: "Server.Moid eq '{{ server_moid }}'"
+    api_body: {
+      "AdminPowerState": "{{ power_state }}"
+    }
+# Configure LED locator state
+- name: "Configure {{ inventory_hostname }} locator state"
+  intersight_rest_api:
+    api_private_key: "{{ api_private_key }}"
+    api_key_id: "{{ api_key_id }}"
+    api_key_uri: "{{ api_key_uri }}"
+    validate_certs: "{{ validate_certs }}"
+    state: "{{ state }}"
+    resource_path: /compute/ServerSettings
+    query_params:
+      $filter: "Server.Moid eq '{{ server_moid }}'"
+    api_body: {
+      "AdminLocatorLedState": "{{ locator_state }}"
+    }
+  when: locator_state is defined

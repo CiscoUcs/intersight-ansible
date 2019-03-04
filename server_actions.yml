@@ -12,9 +12,13 @@
   tasks:
     - block:
         - import_role:
-            name: service_profiles/server_profiles
+            name: servers/actions
           vars:
             <<: *api_info
-            profile_name: "SP-{{ inventory_hostname }}"
-            virtual_media: nfs-esx-6-7U1
+            # power and reset state
+            # options: Policy, PowerOn, PowerOff, PowerCycle, HardReset, Shutdown, Reboot
+            power_state: PowerCycle
+            # led locator state
+            # options: On, Off, None
+            # locator_state: On
       delegate_to: localhost
