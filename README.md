@@ -12,6 +12,7 @@ If needed, you can specfiy this repo as a library and module_utils location with
 ```
 [defaults]
 library = <path to intersight-ansible clone>/library
+module_utils = <path to intersight-ansible clone>/module_utils
 ```
 
 ### Current Development Status
