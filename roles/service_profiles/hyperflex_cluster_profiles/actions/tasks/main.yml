@@ -1,0 +1,71 @@
+---
+# Get server Moids
+- name: Get server Moid
+  intersight_facts:
+    api_private_key: "{{ api_private_key }}"
+    api_key_id: "{{ api_key_id }}"
+    api_uri: "{{ api_uri | default(omit) }}"
+    validate_certs: "{{ validate_certs | default(omit) }}"
+    state: "{{ state | default(omit) }}"
+    server_names:
+      - "{{ item }}"
+  loop: "{{ hx_servers }}"
+  register: inventory
+# Get Cluster Profile Attributes
+- name: "Get {{ hx_profile_name }} HyperFlex Cluster Profile"
+  intersight_rest_api:
+    api_private_key: "{{ api_private_key }}"
+    api_key_id: "{{ api_key_id }}"
+    api_uri: "{{ api_uri | default(omit) }}"
+    validate_certs: "{{ validate_certs | default(omit) }}"
+    state: "{{ state | default(omit) }}"
+    resource_path: /hyperflex/ClusterProfiles
+    query_params:
+      $filter: "Name eq '{{ hx_profile_name }}'"
+  register: profile
+# Assign servers and profile to node profile
+- name: "Configure Node Profile"
+  intersight_rest_api:
+    api_private_key: "{{ api_private_key }}"
+    api_key_id: "{{ api_key_id }}"
+    api_uri: "{{ api_uri | default(omit) }}"
+    validate_certs: "{{ validate_certs | default(omit) }}"
+    state: "{{ state | default(omit) }}"
+    resource_path: /hyperflex/NodeProfiles
+    query_params:
+      $filter: "Name eq '{{ hx_profile_name }}-{{ idx + 1 }}'"
+    api_body: {
+      "Name":"{{ hx_profile_name }}-{{ idx + 1}}",
+      "AssignedServer": {
+        "Moid": "{{ item.intersight_servers[0].Moid }}"
+      },
+      "ClusterProfile": {
+        "Moid": "{{ profile.api_response.Moid }}"
+      }
+    }
+  when: item.intersight_servers is not none
+  loop: "{{ inventory.results }}"
+  loop_control:
+    index_var: idx
+# Perform action when not already in the desired state
+- name: "Perform Action on {{ hx_profile_name }} Profile"
+  intersight_rest_api:
+    api_private_key: "{{ api_private_key }}"
+    api_key_id: "{{ api_key_id }}"
+    api_uri: "{{ api_uri | default(omit) }}"
+    validate_certs: "{{ validate_certs | default(omit) }}"
+    state: "{{ state | default(omit) }}"
+    resource_path: /hyperflex/ClusterProfiles
+    query_params:
+      $filter: "Name eq '{{ hx_profile_name }}'"
+    api_body: {
+      "Action": "{{ hx_action }}"
+    }
+  when:
+    - profile.api_response.ConfigContext.ConfigState != 'Configuring'
+    - profile.api_response.ConfigContext.ConfigState != 'Associated'
+# Can optionally wait for subsequent tasks if needed
+# register: result
+# until: result.api_response.config_context.config_state == 'Associated'
+# retries: 20
+# delay: 30

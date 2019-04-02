@@ -1,0 +1,18 @@
+---
+- name: "Configure {{ hx_sys_config_policy }} DNS, NTP, and Timezone Policy"
+  intersight_rest_api:
+    api_private_key: "{{ api_private_key }}"
+    api_key_id: "{{ api_key_id }}"
+    api_uri: "{{ api_uri | default(omit) }}"
+    validate_certs: "{{ validate_certs | default(omit) }}"
+    state: "{{ state | default(omit) }}"
+    resource_path: /hyperflex/SysConfigPolicies
+    query_params:
+      $filter: "Name eq '{{ hx_sys_config_policy }}'"
+    api_body: {
+      "Name": "{{ hx_sys_config_policy }}",
+      "Timezone":"{{ hx_sys_config_timezone }}",
+      "DnsServers":"{{ hx_sys_config_dns_servers }}",
+      "NtpServers":"{{ hx_sys_config_ntp_servers }}"
+    }
+  register: sys_config

@@ -8,3 +8,4 @@ C240M4-FCH1906V37P server_moid=5c3cf5736671773272643bbc model=UCSC-C240-M4S2 boo
  C220-WZP214303XK server_moid=5c3f3d826671773272fa8085 model=UCSC-C220-M5SX boot_policy=na
  C220-WZP21421OOP server_moid=5c3f3dab6671773272fa8c10 model=UCSC-C220-M5SX boot_policy=na
  C220-WZP214303YM server_moid=5c3f57ee6671773272018df9 model=UCSC-C220-M5SX boot_policy=na
+10-197-110-55-C480M5 server_moid=5c9378356176752d31fc67ab model=UCSC-C480-M5 boot_policy=na

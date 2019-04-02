@@ -1,0 +1,71 @@
+---
+# Cluster Profile Attributes
+- name: "Configure {{ hx_profile_name }} HyperFlex Cluster Profile"
+  intersight_rest_api:
+    api_private_key: "{{ api_private_key }}"
+    api_key_id: "{{ api_key_id }}"
+    api_uri: "{{ api_uri | default(omit) }}"
+    validate_certs: "{{ validate_certs | default(omit) }}"
+    state: "{{ state | default(omit) }}"
+    resource_path: /hyperflex/ClusterProfiles
+    query_params:
+      $filter: "Name eq '{{ hx_profile_name }}'"
+    api_body: {
+      "Name":"{{ hx_profile_name }}",
+      "HxdpVersion":"{{ hx_data_platform_version }}",
+      "MgmtPlatform":"{{ hx_mgmt_platform }}",
+      "Description":"{{ hx_profile_description }}",
+      "StorageDataVlan":{
+        "VlanId":"{{ hx_storage_vlan }}"
+      },
+      "MgmtIpAddress":"{{ mgmt_ip }}",
+      "Tags":[
+        {
+          "Key":"Demo",
+          "Value":"Yes"
+        }
+      ]
+    }
+# Update Cluster Profile if Policies defined
+- name: "Policies for {{ hx_profile_name }} HyperFlex Cluster Profile"
+  intersight_rest_api:
+    api_private_key: "{{ api_private_key }}"
+    api_key_id: "{{ api_key_id }}"
+    api_uri: "{{ api_uri | default(omit) }}"
+    validate_certs: "{{ validate_certs | default(omit) }}"
+    state: "{{ state | default(omit) }}"
+    resource_path: /hyperflex/ClusterProfiles
+    query_params:
+      $filter: "Name eq '{{ hx_profile_name }}'"
+    api_body: {
+      "Name":"{{ hx_profile_name }}",
+      "LocalCredential":{
+        "Moid":"{{ local_credential.api_response.Moid }}",
+      },
+      "SysConfig":{
+        "Moid":"{{ sys_config.api_response.Moid }}",
+      },
+      "ClusterNetwork":{
+        "Moid":"{{ cluster_network.api_response.Moid }}",
+      },
+      "VcenterConfig":{
+        "Moid":"{{ vcenter.api_response.Moid }}",
+      },
+      "ClusterStorage":{
+        "Moid":"{{ storage_setting.api_response.Moid }}",
+      },
+      "NodeConfig":{
+        "Moid":"{{ node_config.api_response.Moid }}",
+      },
+      "ProxySetting":{
+        "Moid":"{{ proxy_setting.api_response.Moid }}"
+      }
+    }
+  when:
+    - local_credential.api_response is defined
+    - sys_config.api_response is defined
+    - cluster_network.api_response is defined
+    - vcenter.api_response is defined
+    - node_config.api_response is defined
+    - proxy_setting.api_response is defined
+    - storage_setting.api_response is defined

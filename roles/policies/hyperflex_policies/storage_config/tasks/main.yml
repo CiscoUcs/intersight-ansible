@@ -1,0 +1,16 @@
+---
+- name: "Configure {{ hx_cluster_storage_policy }} Storage Configuration Policy"
+  intersight_rest_api:
+    api_private_key: "{{ api_private_key }}"
+    api_key_id: "{{ api_key_id }}"
+    api_uri: "{{ api_uri | default(omit) }}"
+    validate_certs: "{{ validate_certs | default(omit) }}"
+    state: "{{ state | default(omit) }}"
+    resource_path: /hyperflex/ClusterStoragePolicies
+    query_params:
+      $filter: "Name eq '{{ hx_cluster_storage_policy }}'"
+    api_body: {
+      "Name":"{{ hx_cluster_storage_policy }}",
+      "DiskPartitionCleanup": true
+    }
+  register: storage_setting
