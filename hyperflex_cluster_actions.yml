@@ -1,0 +1,26 @@
+---
+#
+# HyperFlex Cluster Profile Actions (assign, deploy)
+#
+- hosts: all
+  connection: local
+  gather_facts: false
+  vars:
+    api_info: &api_info
+      api_private_key: ~/Downloads/SecretKey.txt
+      api_key_id: 5a3404ac3768393836093cab/5c92d2fb7564612d3048be4c/5c92d31e7564612d3048c2c2
+      # define the following as needed in your environment
+      # api_uri:
+      # validate_certs:
+      # state:
+  tasks:
+    # Actions can be performed on multiple clusters at once
+    # Assign Cluster Profile
+    - import_role:
+        name: service_profiles/hyperflex_cluster_profiles/actions
+      vars:
+        <<: *api_info
+        hx_profile_name: "{{ inventory_hostname }}"
+        # options: Validate, Deploy, Abort
+        hx_action: Deploy
+      delegate_to: localhost

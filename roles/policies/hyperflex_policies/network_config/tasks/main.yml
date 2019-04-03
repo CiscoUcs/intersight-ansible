@@ -1,0 +1,31 @@
+---
+- name: "Configure {{ hx_cluster_network_policy }} Network Configuration Policy"
+  intersight_rest_api:
+    api_private_key: "{{ api_private_key }}"
+    api_key_id: "{{ api_key_id }}"
+    api_uri: "{{ api_uri | default(omit) }}"
+    validate_certs: "{{ validate_certs | default(omit) }}"
+    state: "{{ state | default(omit) }}"
+    resource_path: /hyperflex/ClusterNetworkPolicies
+    query_params:
+      $filter: "Name eq '{{ hx_cluster_network_policy }}'"
+    api_body: {
+      "Name":"{{ hx_cluster_network_policy }}",
+      "JumboFrame":false,
+      "MgmtVlan":{
+        "Name":"{{ hx_mgmt_vlan_name }}",
+        "VlanId":"{{ hx_mgmt_vlan }}"
+      },
+      "VmMigrationVlan":{
+        "Name":"{{ hx_migration_vlan_name }}",
+        "VlanId":"{{ hx_migration_vlan }}"
+      },
+      "VmNetworkVlans":[
+        {
+          "Name":"{{ hx_vm_vlan_name }}",
+          "ObjectType": "hyperflex.NamedVlan",
+          "VlanId":"{{ hx_vm_vlan }}"
+        }
+      ]
+    }
+  register: cluster_network
