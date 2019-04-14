@@ -5,10 +5,13 @@
   gather_facts: false
   vars:
     api_info: &api_info
-      api_private_key: "{{ api_private_key | default('~/Downloads/SSOSecretKey.txt') }}"
-      api_key_id: "{{ api_key_id | default('596cc79e5d91b400010d15ad/596cc7945d91b400010d154e/5b6275df3437357030a7795f') }}"
-      api_uri: "{{ api_uri | default(omit) }}"
-      validate_certs: "{{ validate_certs | default(omit) }}"
+      api_private_key: "{{ var_api_private_key | default('~/Downloads/SecretKey.txt') }}"
+      api_key_id: "{{ var_api_key_id | default('5a3404ac3768393836093cab/5c92d2fb7564612d3048be4c/5c92d31e7564612d3048c2c2') }}"
+      # define the following as needed in your environment
+      # api_uri:
+      # validate_certs:
+      # state:
+    inventory_file: "{{ var_inventory_file | default('standalone_server_inventory') }}"
   tasks:
     # find all servers
     - intersight_facts:
@@ -17,7 +20,7 @@
       register: all_results
     # put standalone servers (IMC) into a file
     - lineinfile:
-        path: "{{ playbook_dir }}/standalone_server_inventory"
+        path: "{{ playbook_dir }}/{{ inventory_file }}"
         line: "{{ item.Name }} server_moid={{ item.Moid }} model={{ item.Model }} boot_policy={{ (item.Tags | items2dict(key_name='Key', value_name='Value'))['boot_policy'] | default('na') }}"
         create: true
       # ansible and jmespath contains have type differences, so to/from_json used
