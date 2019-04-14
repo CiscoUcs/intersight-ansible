@@ -1,20 +1,58 @@
 ---
-- hosts: all
+#
+# Configure Server Policies and Profiles
+#
+# Play below configures shared policies that are only run once from localhost
+- hosts: localhost
   connection: local
   gather_facts: false
   vars:
     api_info: &api_info
-      api_private_key: "{{ var_api_private_key | default('~/Downloads/SSOSecretKey.txt') }}"
-      api_key_id: "{{ var_api_key_id | default('596cc79e5d91b400010d15ad/596cc7945d91b400010d154e/5b6275df3437357030a7795f') }}"
-      api_key_uri: "{{ var_api_key_uri | default(omit) }}"
-      validate_certs: "{{ var_validate_certs | default(omit) }}"
-      state: "{{ var_state | default(omit) }}"
+      api_private_key: "{{ var_api_private_key | default('~/Downloads/SecretKey.txt') }}"
+      api_key_id: "{{ var_api_key_id | default('5a3404ac3768393836093cab/5c92d2fb7564612d3048be4c/5c92d31e7564612d3048c2c2') }}"
+      # define the following as needed in your environment
+      # api_uri:
+      # validate_certs:
+      # state:
+    # Virtual Media variables are also used in the profiles play below
+    vmedia_info: &vmedia_info
+      vmedia_policy: nfs-esx-6-7U1
+      remote_file: VMware_ESXi_6.7.0_10302608_Custom_Cisco_6.7.1.1.iso
+      remote_path: /mnt/SHARE/ISOS/ESX
+      remote_hostname: 172.28.224.77
   tasks:
     - block:
         - import_role:
-            name: service_profiles/server_profiles
+            name: policies/server_policies/boot_order
           vars:
             <<: *api_info
-            profile_name: "SP-{{ inventory_hostname }}"
-            virtual_media: nfs-esx-6-7U1
+            boot_policy: vmedia-local-mraid
+            disk_slot: MRAID
+        - import_role:
+            name: policies/server_policies/boot_order
+          vars:
+            <<: *api_info
+            boot_policy: vmedia-local-hba
+            disk_slot: HBA
+      tags: ['boot_order']
+    - import_role:
+        name: policies/server_policies/virtual_media
+      vars:
+        <<: *api_info
+        <<: *vmedia_info
+      tags: ['virtual_media']
+#
+# Configure profiles specific to server
+#
+- hosts: all:!localhost
+  connection: local
+  gather_facts: false
+  tasks:
+    - import_role:
+        name: service_profiles/server_profiles
+      vars:
+        <<: *api_info
+        profile_name: "SP-{{ inventory_hostname }}"
+        <<: *vmedia_info
+      # Use the localhost's environment and Python
       delegate_to: localhost

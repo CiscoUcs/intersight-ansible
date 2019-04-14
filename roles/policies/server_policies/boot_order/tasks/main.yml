@@ -3,9 +3,9 @@
   intersight_rest_api:
     api_private_key: "{{ api_private_key }}"
     api_key_id: "{{ api_key_id }}"
-    api_key_uri: "{{ api_key_uri }}"
-    validate_certs: "{{ validate_certs }}"
-    state: "{{ state }}"
+    api_uri: "{{ api_uri | default(omit) }}"
+    validate_certs: "{{ validate_certs | default(omit) }}"
+    state: "{{ state | default(omit) }}"
     resource_path: /boot/PrecisionPolicies
     query_params:
       $filter: "Name eq '{{ boot_policy }}'"
