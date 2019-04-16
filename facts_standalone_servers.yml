@@ -1,34 +1,54 @@
 ---
-# retrieve facts from Intersight servers
-- hosts: localhost
+#
+# The hosts group used is provided by the group variable or defaulted to 'DevNet-Standalone'.
+# You can specify a specific host (or host group) on the command line:
+#   ansible-playbook ... -e group=<your host group>
+#   e.g., ansible-playbook server_profiles.yml -e group=TME-Demo
+#
+# This playbook only runs once (and not for each server in the inventory), but the hosts group is used to get API key info
+- hosts: "{{ group | default('DevNet-Standalone') }}"
   connection: local
   gather_facts: false
   vars:
     api_info: &api_info
-      api_private_key: "{{ var_api_private_key | default('~/Downloads/SecretKey.txt') }}"
-      api_key_id: "{{ var_api_key_id | default('5a3404ac3768393836093cab/5c92d2fb7564612d3048be4c/5c92d31e7564612d3048c2c2') }}"
-      # define the following as needed in your environment
-      # api_uri:
-      # validate_certs:
-      # state:
-    inventory_file: "{{ var_inventory_file | default('standalone_server_inventory') }}"
+      # If api_ vars are defined in the inventory (or elsewhere) use those values
+      # Else default to specific values
+      api_private_key: "{{ api_private_key | default('~/Downloads/SecretKey.txt') }}"
+      api_key_id: "{{ api_key_id | default('5a3404ac3768393836093cab/5b02fa7e6d6c356772394170/5b02fad36d6c356772394449') }}"
+      api_uri: "{{ api_uri | default(omit) }}"
+      validate_certs: "{{ validate_certs | default(omit) }}"
+      state: "{{ state | default(omit) }}"
+    filepath: "{{ playbook_dir }}/inventory"
   tasks:
-    # find all servers
-    - intersight_facts:
-        <<: *api_info
-        server_names:
-      register: all_results
-    # put standalone servers (IMC) into a file
-    - lineinfile:
-        path: "{{ playbook_dir }}/{{ inventory_file }}"
-        line: "{{ item.Name }} server_moid={{ item.Moid }} model={{ item.Model }} boot_policy={{ (item.Tags | items2dict(key_name='Key', value_name='Value'))['boot_policy'] | default('na') }}"
-        create: true
-      # ansible and jmespath contains have type differences, so to/from_json used
-      loop: "{{ all_results.intersight_servers | json_query(platform_query) | to_json | from_json | json_query(model_query) }}"
-      loop_control:
-        label: "{{ item.Name }}"
-      vars:
-        # filter for IMC and C-Series only (no HX)
-        platform_query: "[?PlatformType=='IMC']"
-        model_query: "[?contains(Model, 'UCSC-C')]"
-      when: all_results.intersight_servers is defined
+    # Enclose tasks in a block that is only run once
+    - block:
+        # Find all servers
+        - intersight_facts:
+            <<: *api_info
+            server_names:
+          register: all_results
+        # Place the servers in a group in the file
+        - debug:
+            msg: Inventory filepath "{{ filepath }}"
+        - lineinfile:
+            path: "{{ filepath }}"
+            line: "[{{ group | default('DevNet-Standalone') }}]"
+            create: true
+        # Update standalone servers (IMC) in the file
+        - lineinfile:
+            path: "{{ filepath }}"
+            # Each line of the inventory has the following:
+            # Name server_moid=<Moid value> model=<Model value> boot_policy=<policy from tag> | 'na'
+            line: "{{ item.Name }} server_moid={{ item.Moid }} model={{ item.Model }} boot_policy={{ (item.Tags | items2dict(key_name='Key', value_name='Value'))['boot_policy'] | default('na') }}"
+            create: true
+          # Ansible and jmespath contains have type differences, so to/from_json used
+          loop: "{{ all_results.intersight_servers | json_query(platform_query) | to_json | from_json | json_query(model_query) }}"
+          loop_control:
+            label: "{{ item.Name }}"
+          vars:
+            # Filter for IMC and C-Series only (no HX)
+            platform_query: "[?PlatformType=='IMC']"
+            model_query: "[?contains(Model, 'UCSC-C')]"
+          when: all_results.intersight_servers is defined
+      delegate_to: localhost
+      run_once: true

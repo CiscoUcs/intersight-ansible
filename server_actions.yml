@@ -1,24 +1,27 @@
 ---
-- hosts: all
+#
+# The hosts group used is provided by the group variable or defaulted to 'DevNet-Standalone'.
+# You can specify a specific host (or host group) on the command line:
+#   ansible-playbook ... -e group=<your host group>
+#   e.g., ansible-playbook server_profiles.yml -e group=TME-Demo
+#
+- hosts: "{{ group | default('DevNet-Standalone') }}"
   connection: local
   gather_facts: false
   vars:
-    api_info: &api_info
-      api_private_key: "{{ var_api_private_key | default('~/Downloads/SSOSecretKey.txt') }}"
-      api_key_id: "{{ var_api_key_id | default('596cc79e5d91b400010d15ad/596cc7945d91b400010d154e/5b6275df3437357030a7795f') }}"
-      api_key_uri: "{{ var_api_key_uri | default(omit) }}"
-      validate_certs: "{{ var_validate_certs | default(omit) }}"
-      state: "{{ var_state | default(omit) }}"
+  # If your inventory or host/group_vars don't specify required api key information, you can set directly below:
+  # api_private_key: ~/Downloads/SecretKey.txt
+  # api_key_id: 5a3404ac3768393836093cab/5b02fa7e6d6c356772394170/5b02fad36d6c356772394449
   tasks:
-    - block:
-        - import_role:
-            name: servers/actions
-          vars:
-            <<: *api_info
-            # power and reset state
-            # options: Policy, PowerOn, PowerOff, PowerCycle, HardReset, Shutdown, Reboot
-            power_state: PowerCycle
-            # led locator state
-            # options: On, Off, None
-            # locator_state: On
+    - import_role:
+        name: servers/actions
+      vars:
+        # power and reset state
+        # options: Policy, PowerOn, PowerOff, PowerCycle, HardReset, Shutdown, Reboot
+        # Can override on the command line: ansible-playbook ... -e power_state=PowerCyle
+        power_state: PowerOn
+        # led locator state
+        # options: On, Off, None
+        # Can override on the command line: ansible-playbook ... -e power_state=Off
+        # locator_state: On
       delegate_to: localhost

@@ -1,0 +1,11 @@
+---
+mgmt_ip: 172.28.224.164
+hx_storage_vlan: 500
+hx_mgmt_ip_start: 172.28.224.158
+hx_mgmt_ip_end: 172.28.224.160
+hx_dp_ip_start: 172.28.224.161
+hx_dp_ip_end: 172.28.224.163
+hx_servers:
+  - C220-WZP220315M3
+  - C220-WZP22040093
+  - C220-WZP22040938

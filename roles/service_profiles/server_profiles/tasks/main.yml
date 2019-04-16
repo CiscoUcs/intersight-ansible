@@ -1,11 +1,15 @@
 ---
 - name: "Configure {{ profile_name }} Server Profile"
+  vars:
+    # Create an anchor for api_info that can be used throughout the file
+    api_info: &api_info
+      api_private_key: "{{ api_private_key }}"
+      api_key_id: "{{ api_key_id }}"
+      api_uri: "{{ api_uri | default(omit) }}"
+      validate_certs: "{{ validate_certs | default(omit) }}"
+      state: "{{ state | default(omit) }}"
   intersight_rest_api:
-    api_private_key: "{{ api_private_key }}"
-    api_key_id: "{{ api_key_id }}"
-    api_uri: "{{ api_uri | default(omit) }}"
-    validate_certs: "{{ validate_certs | default(omit) }}"
-    state: "{{ state | default(omit) }}"
+    <<: *api_info
     resource_path: /server/Profiles
     query_params:
       $filter: "Name eq '{{ profile_name }}'"
@@ -19,11 +23,7 @@
 # Get boot order policy that will be updated with Profile links
 - name: Get current boot order policy and linked profiles
   intersight_rest_api:
-    api_private_key: "{{ api_private_key }}"
-    api_key_id: "{{ api_key_id }}"
-    api_uri: "{{ api_uri | default(omit) }}"
-    validate_certs: "{{ validate_certs | default(omit) }}"
-    state: "{{ state | default(omit) }}"
+    <<: *api_info
     resource_path: /boot/PrecisionPolicies
     query_params:
       $filter: "Name eq '{{ boot_policy }}'"
@@ -33,6 +33,7 @@
 # Append profile to list of profiles linked to policy
 - name: Create payload and configure boot policy
   block:
+    # Define the payload with the Profile Moid
     - set_fact:
         new_payload: [
           {
@@ -40,15 +41,12 @@
             "ObjectType": "server.Profile"
           }
         ]
+    # Append the payload to any existing Profiles
     - set_fact:
         api_payload: "{{ boot_order_resp.api_response.Profiles }} + {{ new_payload }}"
     - debug: var=api_payload
     - intersight_rest_api:
-        api_private_key: "{{ api_private_key }}"
-        api_key_id: "{{ api_key_id }}"
-        api_uri: "{{ api_uri | default(omit) }}"
-        validate_certs: "{{ validate_certs | default(omit) }}"
-        state: "{{ state | default(omit) }}"
+        <<: *api_info
         resource_path: /boot/PrecisionPolicies
         query_params:
           $filter: "Name eq '{{ boot_policy }}'"
@@ -63,11 +61,7 @@
 # Get virtual media policy
 - name: Get current virtual media policy and linked profiles
   intersight_rest_api:
-    api_private_key: "{{ api_private_key }}"
-    api_key_id: "{{ api_key_id }}"
-    api_uri: "{{ api_uri | default(omit) }}"
-    validate_certs: "{{ validate_certs | default(omit) }}"
-    state: "{{ state | default(omit) }}"
+    <<: *api_info
     resource_path: /vmedia/Policies
     query_params:
       $filter: "Name eq '{{ vmedia_policy }}'"
@@ -75,6 +69,7 @@
 # Append profile to list of profiles linked to policy
 - name: Create payload and configure virtual media policy
   block:
+    # Define the payload with the Profile Moid
     - set_fact:
         new_payload: [
           {
@@ -82,15 +77,12 @@
             "ObjectType": "server.Profile"
           }
         ]
+    # Append the payload to any existing Profiles
     - set_fact:
         api_payload: "{{ virtual_media_resp.api_response.Profiles }} + {{ new_payload }}"
     - debug: var=api_payload
     - intersight_rest_api:
-        api_private_key: "{{ api_private_key }}"
-        api_key_id: "{{ api_key_id }}"
-        api_uri: "{{ api_uri | default(omit) }}"
-        validate_certs: "{{ validate_certs | default(omit) }}"
-        state: "{{ state | default(omit) }}"
+        <<: *api_info
         resource_path: /vmedia/Policies
         query_params:
           $filter: "Name eq '{{ vmedia_policy }}'"
@@ -103,11 +95,7 @@
 # Assign server to profile
 - name: Assign server
   intersight_rest_api:
-    api_private_key: "{{ api_private_key }}"
-    api_key_id: "{{ api_key_id }}"
-    api_uri: "{{ api_uri | default(omit) }}"
-    validate_certs: "{{ validate_certs | default(omit) }}"
-    state: "{{ state | default(omit) }}"
+    <<: *api_info
     resource_path: /server/Profiles
     query_params:
       $filter: "Name eq '{{ profile_name }}'"
@@ -118,10 +106,7 @@
     }
   register: assign_resp
   when: server_moid is defined
-#
-# Deploy when tag is set or when changes to the profile have occurred.
 # Task below sets a fact that a change has occurred if the deploy tag was provided.
-#
 - set_fact:
     assign_resp:
       api_response:
@@ -129,13 +114,10 @@
           Changes:
             - true
   tags: ['never', 'deploy']
+# Deploy when tag is set or when changes to the profile have occurred.
 - name: Deploy server
   intersight_rest_api:
-    api_private_key: "{{ api_private_key }}"
-    api_key_id: "{{ api_key_id }}"
-    api_uri: "{{ api_uri | default(omit) }}"
-    validate_certs: "{{ validate_certs | default(omit) }}"
-    state: "{{ state | default(omit) }}"
+    <<: *api_info
     resource_path: /server/Profiles
     query_params:
       $filter: "Name eq '{{ profile_name }}'"
@@ -143,6 +125,6 @@
       "Action": "Deploy"
     }
   when:
-    - assign_resp is defined
+    - assign_resp.api_response is defined
     - assign_resp.api_response.ConfigChanges.Changes | default([]) | length > 0
   tags: ['deploy']
