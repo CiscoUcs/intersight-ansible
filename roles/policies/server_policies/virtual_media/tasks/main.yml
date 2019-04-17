@@ -1,11 +1,15 @@
 ---
 - name: "Configure {{ vmedia_policy }} Virtual Media Policy"
+  vars:
+    # Create an anchor for api_info that can be used throughout the file
+    api_info: &api_info
+      api_private_key: "{{ api_private_key }}"
+      api_key_id: "{{ api_key_id }}"
+      api_uri: "{{ api_uri | default(omit) }}"
+      validate_certs: "{{ validate_certs | default(omit) }}"
+      state: "{{ state | default(omit) }}"
   intersight_rest_api:
-    api_private_key: "{{ api_private_key }}"
-    api_key_id: "{{ api_key_id }}"
-    api_uri: "{{ api_uri | default(omit) }}"
-    validate_certs: "{{ validate_certs | default(omit) }}"
-    state: "{{ state | default(omit) }}"
+    <<: *api_info
     resource_path: /vmedia/Policies
     query_params:
       $filter: "Name eq '{{ vmedia_policy }}'"

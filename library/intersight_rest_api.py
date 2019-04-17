@@ -147,16 +147,28 @@ def get_resource(intersight):
     return response_dict
 
 
+def compare_lists(expected_list, actual_list):
+    for expected, actual in zip(expected_list, actual_list):
+        # if compare_values returns False, stop the loop and return
+        if not compare_values(expected, actual):
+            return False
+    # loop complete with all items matching
+    return True
+
+
 def compare_values(expected, actual):
     try:
-        for (key, value) in iteritems(expected):
-            if re.search(r'P(ass)?w(or)?d', key) or key not in actual:
-                # do not compare any password related attributes or attributes that are not in the actual resource
-                continue
-            if not compare_values(value, actual[key]):
-                return False
-        # loop complete with all items matching
-        return True
+        if type(expected) is list and type(actual) is list:
+            return compare_lists(expected, actual)
+        else:
+            for (key, value) in iteritems(expected):
+                if re.search(r'P(ass)?w(or)?d', key) or key not in actual:
+                    # do not compare any password related attributes or attributes that are not in the actual resource
+                    continue
+                if not compare_values(value, actual[key]):
+                    return False
+            # loop complete with all items matching
+            return True
     except (AttributeError, TypeError):
         if expected and actual != expected:
             return False

@@ -1,0 +1,17 @@
+[DevNet-HX]
+sjc07-r13-500
+sjc07-r13-501
+sjc07-r13-502
+sjc07-r13-503
+
+[DevNet-Standalone]
+C220-FCH2050V0LB server_moid=5cb4cf586176752d30df9387 model=UCSC-C220-M4L boot_policy=vmedia-local-hba
+C240M4-FCH1906V37P server_moid=5cb4cf596176752d30df9515 model=UCSC-C240-M4S2 boot_policy=vmedia-local-hba
+
+[DevNet:children]
+DevNet-HX
+DevNet-Standalone
+
+[DevNet:vars]
+api_private_key=~/Downloads/SecretKey.txt
+api_key_id=5a3404ac3768393836093cab/5b02fa7e6d6c356772394170/5b02fad36d6c356772394449

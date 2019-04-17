@@ -1,26 +1,26 @@
 ---
 #
-# Configure a HyperFlex Cluster Profile
+# Configure HyperFlex Cluster Profiles
 #
-- hosts: all
+# The hosts group used is provided by the group variable or defaulted to 'DevNet-HX'.
+# You can specify a specific host (or host group) on the command line:
+#   ansible-playbook ... -e group=<your host group>
+#   e.g., ansible-playbook server_profiles.yml -e group=TME-Demo
+#
+- hosts: "{{ group | default('DevNet-HX') }}"
   connection: local
   gather_facts: false
   vars:
-    api_info: &api_info
-      api_private_key: ~/Downloads/SecretKey.txt
-      api_key_id: 5a3404ac3768393836093cab/5c92d2fb7564612d3048be4c/5c92d31e7564612d3048c2c2
-      # define the following as needed in your environment
-      # api_uri:
-      # validate_certs:
-      # state:
+  # If your inventory or host/group_vars don't specify required api key information, you can set directly below:
+  # api_private_key: ~/Downloads/SecretKey.txt
+  # api_key_id: 5a3404ac3768393836093cab/5b02fa7e6d6c356772394170/5b02fad36d6c356772394449
   tasks:
-    # Policy configuration is shared across clusters, so only run once
+    # Policy configuration is shared across clusters, so enclose in a block and only run once
     - block:
         # DNS
         - import_role:
             name: policies/hyperflex_policies/dns_ntp_timezone
           vars:
-            <<: *api_info
             hx_sys_config_policy: devnet-dns-ntp
             hx_sys_config_timezone: America/Los_Angeles
             hx_sys_config_dns_servers:
@@ -32,7 +32,6 @@
         - import_role:
             name: policies/hyperflex_policies/security
           vars:
-            <<: *api_info
             hx_local_credential_policy: devnet-creds
             hx_hypervisor_admin: root
             hx_hypervisor_password: <password>
@@ -42,7 +41,6 @@
         - import_role:
             name: policies/hyperflex_policies/vcenter
           vars:
-            <<: *api_info
             hx_vcenter_config_policy: devnet-vcenter
             hx_vcenter_hostname: 172.28.224.49
             hx_vcenter_username: administrator@vsphere.local
@@ -53,14 +51,12 @@
         - import_role:
             name: policies/hyperflex_policies/storage_config
           vars:
-            <<: *api_info
             hx_cluster_storage_policy: devnet-storage
           tags: ['storage']
         # Proxy
         - import_role:
             name: policies/hyperflex_policies/http_proxy
           vars:
-            <<: *api_info
             hx_proxy_setting_policy: devnet-http-proxy
             hx_proxy_setting_hostname: proxy-wsa.esl.cisco.com
             hx_proxy_setting_port: 80
@@ -69,7 +65,6 @@
         - import_role:
             name: policies/hyperflex_policies/network_config
           vars:
-            <<: *api_info
             hx_cluster_network_policy: devnet-network
             hx_mgmt_vlan_name: native
             hx_mgmt_vlan: 0
@@ -80,7 +75,9 @@
           tags: ['network']
       delegate_to: localhost
       run_once: true
+    #
     # Node and Profile configuration can be performed on multiple clusters at once
+    #
     - block:
         # Node IP and Hostname
         - import_role:
@@ -91,7 +88,6 @@
             name: service_profiles/hyperflex_cluster_profiles
           tags: ['profile']
       vars:
-        <<: *api_info
         hx_node_config_policy: "{{ inventory_hostname }}-node-config"
         hx_mgmt_netmask: 255.255.254.0
         hx_mgmt_gateway: 172.28.224.1
