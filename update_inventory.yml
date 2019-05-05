@@ -1,7 +1,5 @@
 ---
 #
-# Configure Server Policies and Profiles
-#
 # The hosts group used is provided by the group variable or defaulted to 'DevNet-Standalone'.
 # You can specify a specific host (or host group) on the command line:
 #   ansible-playbook ... -e group=<your host group>
