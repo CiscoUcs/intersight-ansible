@@ -1,11 +1,14 @@
 ---
 #
+# Configure Server Policies and Profiles
+#
 # The hosts group used is provided by the group variable or defaulted to 'DevNet-Standalone'.
 # You can specify a specific host (or host group) on the command line:
 #   ansible-playbook ... -e group=<your host group>
 #   e.g., ansible-playbook server_profiles.yml -e group=TME-Demo
 #
 # This playbook only runs once (and not for each server in the inventory), but the hosts group is used to get API key info
+#
 - hosts: "{{ group | default('DevNet-Standalone') }}"
   connection: local
   gather_facts: false
@@ -37,9 +40,11 @@
         # Update standalone servers (IMC) in the file
         - lineinfile:
             path: "{{ filepath }}"
+            insertafter: "^\\[{{ group | default('DevNet-Standalone') }}\\]"
+            regexp: "^{{ item.Name }} "
             # Each line of the inventory has the following:
             # Name server_moid=<Moid value> model=<Model value> boot_policy=<policy from tag> | 'na'
-            line: "{{ item.Name }} server_moid={{ item.Moid }} model={{ item.Model }} boot_policy={{ (item.Tags | items2dict(key_name='Key', value_name='Value'))['boot_policy'] | default('na') }}"
+            line: "{{ item.Name }} server_moid={{ item.Moid }} model={{ item.Model }}"
             create: true
           # Ansible and jmespath contains have type differences, so to/from_json used
           loop: "{{ all_results.intersight_servers | json_query(platform_query) | to_json | from_json | json_query(model_query) }}"

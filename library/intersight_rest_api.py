@@ -148,6 +148,9 @@ def get_resource(intersight):
 
 
 def compare_lists(expected_list, actual_list):
+    if len(expected_list) != len(actual_list):
+        # mismatch if list lengths aren't equal
+        return False
     for expected, actual in zip(expected_list, actual_list):
         # if compare_values returns False, stop the loop and return
         if not compare_values(expected, actual):
