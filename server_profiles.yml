@@ -18,6 +18,7 @@
     # Virtual Media variables
     #
     vmedia_policy: nfs-esx-6-7U1
+    bios_policy: adaptive-memory
   tasks:
     # Enclose tasks that only should run once in a block
     - block:
@@ -33,7 +34,7 @@
               vars:
                 boot_policy: vmedia-local-hba
                 disk_slot: HBA
-          tags: ['boot_order']
+          tags: boot_order
         # Virtual Media policy config
         - import_role:
             name: policies/server_policies/virtual_media
@@ -41,7 +42,11 @@
             remote_file: VMware_ESXi_6.7.0_10302608_Custom_Cisco_6.7.1.1.iso
             remote_path: /mnt/SHARE/ISOS/ESX
             remote_hostname: 172.28.224.77
-          tags: ['virtual_media']
+          tags: virtual_media
+        # Bios policy config
+        - import_role:
+            name: policies/server_policies/bios
+          tags: bios
       # Use the localhost's environment and Python and only run once
       delegate_to: localhost
       run_once: true

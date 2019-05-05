@@ -50,7 +50,6 @@
         resource_path: /boot/PrecisionPolicies
         query_params:
           $filter: "Name eq '{{ boot_policy }}'"
-        update_method: post
         api_body: {
           "Profiles": "{{ api_payload }}"
         }
@@ -86,12 +85,44 @@
         resource_path: /vmedia/Policies
         query_params:
           $filter: "Name eq '{{ vmedia_policy }}'"
-        update_method: post
         api_body: {
           "Profiles": "{{ api_payload }}"
         }
   when:
     - profile_resp.api_response.Moid not in (virtual_media_resp.api_response.Profiles | map(attribute='Moid'))
+# Get bios policy
+- name: Get current bios policy and linked profiles
+  intersight_rest_api:
+    <<: *api_info
+    resource_path: /bios/Policies
+    query_params:
+      $filter: "Name eq '{{ bios_policy }}'"
+  register: bios_resp
+# Append profile to list of profiles linked to policy
+- name: Create payload and configure bios policy
+  block:
+    # Define the payload with the Profile Moid
+    - set_fact:
+        new_payload: [
+          {
+            "Moid": "{{ profile_resp.api_response.Moid }}",
+            "ObjectType": "server.Profile"
+          }
+        ]
+    # Append the payload to any existing Profiles
+    - set_fact:
+        api_payload: "{{ bios_resp.api_response.Profiles }} + {{ new_payload }}"
+    - debug: var=api_payload
+    - intersight_rest_api:
+        <<: *api_info
+        resource_path: /bios/Policies
+        query_params:
+          $filter: "Name eq '{{ bios_policy }}'"
+        api_body: {
+          "Profiles": "{{ api_payload }}"
+        }
+  when:
+    - profile_resp.api_response.Moid not in (bios_resp.api_response.Profiles | map(attribute='Moid'))
 # Assign server to profile
 - name: Assign server
   intersight_rest_api:

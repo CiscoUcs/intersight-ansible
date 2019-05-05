@@ -5,8 +5,8 @@ sjc07-r13-502
 sjc07-r13-503
 
 [DevNet-Standalone]
-C220-FCH2050V0LB server_moid=5cb4cf586176752d30df9387 model=UCSC-C220-M4L boot_policy=vmedia-local-hba
-C240M4-FCH1906V37P server_moid=5cb4cf596176752d30df9515 model=UCSC-C240-M4S2 boot_policy=vmedia-local-hba
+C220-FCH2050V0LB server_moid=5cb4cf586176752d30df9387 model=UCSC-C220-M4L
+C240M4-FCH1906V37P server_moid=5ccc5b326176752d30f15d51 model=UCSC-C240-M4S2
 
 [DevNet:children]
 DevNet-HX
