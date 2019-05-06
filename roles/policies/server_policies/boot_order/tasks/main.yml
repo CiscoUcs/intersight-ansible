@@ -32,7 +32,6 @@
         }
       ],
     }
-  register: policy_resp
 # Append profile_resp list to policy
 - block:
     # Create a list of all host's profile Moids
