@@ -14,148 +14,22 @@
     query_params:
       $filter: "Name eq '{{ profile_name }}'"
     api_body: {
-      "Name": "{{ profile_name }}"
-    }
-  register: profile_resp
-- debug:
-    msg: "Server profile moid {{ profile_resp.api_response.Moid }}"
-  when: profile_resp.api_response.Moid is defined
-# Get boot order policy that will be updated with Profile links
-- name: Get current boot order policy and linked profiles
-  intersight_rest_api:
-    <<: *api_info
-    resource_path: /boot/PrecisionPolicies
-    query_params:
-      $filter: "Name eq '{{ boot_policy }}'"
-  register: boot_order_resp
-  # Do not update boot policies that are 'na' in the inventory
-  when: boot_policy != 'na'
-# Append profile to list of profiles linked to policy
-- name: Create payload and configure boot policy
-  block:
-    # Define the payload with the Profile Moid
-    - set_fact:
-        new_payload: [
-          {
-            "Moid": "{{ profile_resp.api_response.Moid }}",
-            "ObjectType": "server.Profile"
-          }
-        ]
-    # Append the payload to any existing Profiles
-    - set_fact:
-        api_payload: "{{ boot_order_resp.api_response.Profiles }} + {{ new_payload }}"
-    - debug: var=api_payload
-    - intersight_rest_api:
-        <<: *api_info
-        resource_path: /boot/PrecisionPolicies
-        query_params:
-          $filter: "Name eq '{{ boot_policy }}'"
-        api_body: {
-          "Profiles": "{{ api_payload }}"
-        }
-  # Do not update if the profile is already in the list
-  when:
-    - boot_policy != 'na'
-    - profile_resp.api_response.Moid not in (boot_order_resp.api_response.Profiles | map(attribute='Moid'))
-# Get virtual media policy
-- name: Get current virtual media policy and linked profiles
-  intersight_rest_api:
-    <<: *api_info
-    resource_path: /vmedia/Policies
-    query_params:
-      $filter: "Name eq '{{ vmedia_policy }}'"
-  register: virtual_media_resp
-# Append profile to list of profiles linked to policy
-- name: Create payload and configure virtual media policy
-  block:
-    # Define the payload with the Profile Moid
-    - set_fact:
-        new_payload: [
-          {
-            "Moid": "{{ profile_resp.api_response.Moid }}",
-            "ObjectType": "server.Profile"
-          }
-        ]
-    # Append the payload to any existing Profiles
-    - set_fact:
-        api_payload: "{{ virtual_media_resp.api_response.Profiles }} + {{ new_payload }}"
-    - debug: var=api_payload
-    - intersight_rest_api:
-        <<: *api_info
-        resource_path: /vmedia/Policies
-        query_params:
-          $filter: "Name eq '{{ vmedia_policy }}'"
-        api_body: {
-          "Profiles": "{{ api_payload }}"
-        }
-  when:
-    - profile_resp.api_response.Moid not in (virtual_media_resp.api_response.Profiles | map(attribute='Moid'))
-# Get bios policy
-- name: Get current bios policy and linked profiles
-  intersight_rest_api:
-    <<: *api_info
-    resource_path: /bios/Policies
-    query_params:
-      $filter: "Name eq '{{ bios_policy }}'"
-  register: bios_resp
-# Append profile to list of profiles linked to policy
-- name: Create payload and configure bios policy
-  block:
-    # Define the payload with the Profile Moid
-    - set_fact:
-        new_payload: [
-          {
-            "Moid": "{{ profile_resp.api_response.Moid }}",
-            "ObjectType": "server.Profile"
-          }
-        ]
-    # Append the payload to any existing Profiles
-    - set_fact:
-        api_payload: "{{ bios_resp.api_response.Profiles }} + {{ new_payload }}"
-    - debug: var=api_payload
-    - intersight_rest_api:
-        <<: *api_info
-        resource_path: /bios/Policies
-        query_params:
-          $filter: "Name eq '{{ bios_policy }}'"
-        api_body: {
-          "Profiles": "{{ api_payload }}"
-        }
-  when:
-    - profile_resp.api_response.Moid not in (bios_resp.api_response.Profiles | map(attribute='Moid'))
-# Assign server to profile
-- name: Assign server
-  intersight_rest_api:
-    <<: *api_info
-    resource_path: /server/Profiles
-    query_params:
-      $filter: "Name eq '{{ profile_name }}'"
-    api_body: {
+      "Name": "{{ profile_name }}",
       "AssignedServer": {
         "Moid": "{{ server_moid }}"
       }
     }
-  register: assign_resp
+  register: profile_resp
   when: server_moid is defined
-# Task below sets a fact that a change has occurred if the deploy tag was provided.
-- set_fact:
-    assign_resp:
-      api_response:
-        ConfigChanges:
-          Changes:
-            - true
-  tags: ['never', 'deploy']
-# Deploy when tag is set or when changes to the profile have occurred.
-- name: Deploy server
+  tags: server_profiles
+# Deploy (or perform other profile_action) when tag is set
+- name: Deploy (or user defined profile_action) Server Profile
   intersight_rest_api:
     <<: *api_info
     resource_path: /server/Profiles
     query_params:
       $filter: "Name eq '{{ profile_name }}'"
     api_body: {
-      "Action": "Deploy"
+      "Action": "{{ profile_action | default('Deploy') }}"
     }
-  when:
-    - assign_resp.api_response is defined
-    - assign_resp.api_response.ConfigChanges.Changes | default([]) | length > 0
-  tags: ['deploy']
+  tags: [never, deploy]

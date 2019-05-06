@@ -1,6 +1,6 @@
 ---
 #
-# Configure Server Policies and Profiles
+# Configure Server Profiles and Policies
 #
 # The hosts group used is provided by the group variable or defaulted to 'DevNet-Standalone'.
 # You can specify a specific host (or host group) on the command line:
@@ -10,35 +10,35 @@
 - hosts: "{{ group | default('DevNet-Standalone') }}"
   connection: local
   gather_facts: false
-  vars:
-    # If your inventory or host/group_vars don't specify required api key information, you can set directly below:
-    # api_private_key: ~/Downloads/SecretKey.txt
-    # api_key_id: 5a3404ac3768393836093cab/5b02fa7e6d6c356772394170/5b02fad36d6c356772394449
-    #
-    # Virtual Media variables
-    #
-    vmedia_policy: nfs-esx-6-7U1
-    bios_policy: adaptive-memory
   tasks:
-    # Enclose tasks that only should run once in a block
+    #
+    # Configure profiles specific to server (run for each server in the inventory)
+    # Server Profiles role will register a profile_resp and profile_resp list (from all hosts) can be used by policy tasks
+    # The role supports Deploy or other user defined profile_action to be used with --tags deploy.  Do not add tags here for the import
+    #
+    - import_role:
+        name: service_profiles/server_profiles
+      vars:
+        profile_name: "SP-{{ inventory_hostname }}"
+      # Use the localhost's environment and Python
+      delegate_to: localhost
+    #
+    # Enclose policy tasks in a block that runs once
+    #
     - block:
-        # Enclose multiple boot order tasks in a block with a boot_order tag
-        - block:
-            - import_role:
-                name: policies/server_policies/boot_order
-              vars:
-                boot_policy: vmedia-local-mraid
-                disk_slot: MRAID
-            - import_role:
-                name: policies/server_policies/boot_order
-              vars:
-                boot_policy: vmedia-local-hba
-                disk_slot: HBA
+        # Boot Order policy config
+        - import_role:
+            name: policies/server_policies/boot_order
+          vars:
+            boot_policy: vmedia-local-disk
+            # optionally set a disk_slot for boot_order policy (e.g., MRAID, HBA, or slot number)
+            # disk_slot: HBA      # Use the localhost's environment and Python
           tags: boot_order
         # Virtual Media policy config
         - import_role:
             name: policies/server_policies/virtual_media
           vars:
+            vmedia_policy: nfs-cdd
             remote_file: VMware_ESXi_6.7.0_10302608_Custom_Cisco_6.7.1.1.iso
             remote_path: /mnt/SHARE/ISOS/ESX
             remote_hostname: 172.28.224.77
@@ -46,16 +46,9 @@
         # Bios policy config
         - import_role:
             name: policies/server_policies/bios
+          vars:
+            bios_policy: adaptive-memory
           tags: bios
-      # Use the localhost's environment and Python and only run once
-      delegate_to: localhost
+      # Policies are common, so only run this block once and not for every host
       run_once: true
-    #
-    # Configure profiles specific to server (run for each server in the inventory)
-    #
-    - import_role:
-        name: service_profiles/server_profiles
-      vars:
-        profile_name: "SP-{{ inventory_hostname }}"
-      # Use the localhost's environment and Python
       delegate_to: localhost

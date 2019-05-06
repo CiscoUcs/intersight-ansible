@@ -17,3 +17,26 @@
       "Name": "{{ bios_policy }}",
       "CiscoAdaptiveMemTraining": "enabled"
     }
+  register: policy_resp
+# Append profile_resp list to policy
+- block:
+    # Create a list of all host's profile Moids
+    - set_fact:
+        # See the Ansible docs on json_query for info on how the Moid data is being extracted
+        profile_list: "{{ ansible_play_hosts | map('extract', hostvars, 'profile_resp') | list | json_query(moid_query) }}"
+      vars:
+        moid_query: "[*].api_response.{Moid: Moid, ObjectType: 'server.Profile'}"
+    - name: "Update Server Profiles used by {{ bios_policy }} Server Policy"
+      intersight_rest_api:
+        <<: *api_info
+        resource_path: /bios/Policies
+        update_method: post
+        query_params:
+          $filter: "Name eq '{{ bios_policy }}'"
+        api_body: {
+          "Profiles": "{{ profile_list }}"
+        }
+  # Do not update if the profile isn't available
+  when:
+    - profile_resp is defined
+    - profile_resp.api_response.Moid is defined
