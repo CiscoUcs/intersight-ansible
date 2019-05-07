@@ -173,7 +173,8 @@ def compare_values(expected, actual):
             # loop complete with all items matching
             return True
     except (AttributeError, TypeError):
-        if expected and actual != expected:
+        # if expected and actual != expected:
+        if actual != expected:
             return False
         return True
 
