@@ -1,25 +1,27 @@
 ---
 #
-# The hosts group used is provided by the group variable or defaulted to 'DevNet-Standalone'.
+# The hosts group used is provided by the group variable or defaulted to 'DevNet'.
 # You can specify a specific host (or host group) on the command line:
 #   ansible-playbook ... -e group=<your host group>
-#   e.g., ansible-playbook server_profiles.yml -e group=TME-Demo
+#   e.g., ansible-playbook server_profiles.yml -e group=TME_Demo
 #
 # This playbook only runs once (and not for each server in the inventory), but the hosts group is used to get API key info
 #
-- hosts: "{{ group | default('DevNet-Standalone') }}"
+- hosts: "{{ group | default('DevNet') }}"
   connection: local
   gather_facts: false
   vars:
+    # Create an anchor for api_info that can be used throughout the file
     api_info: &api_info
-      # If api_ vars are defined in the inventory (or elsewhere) use those values
-      # Else default to specific values
-      api_private_key: "{{ api_private_key | default('~/Downloads/SecretKey.txt') }}"
-      api_key_id: "{{ api_key_id | default('5a3404ac3768393836093cab/5b02fa7e6d6c356772394170/5b02fad36d6c356772394449') }}"
+      api_private_key: "{{ api_private_key }}"
+      api_key_id: "{{ api_key_id }}"
       api_uri: "{{ api_uri | default(omit) }}"
       validate_certs: "{{ validate_certs | default(omit) }}"
       state: "{{ state | default(omit) }}"
+    # Change filepath if you want to update a different inventory file
     filepath: "{{ playbook_dir }}/inventory"
+    # Change host_group if you want to use another group name for your servers in the created inventory
+    host_group: DevNet_Standalone
   tasks:
     # Enclose tasks in a block that is only run once
     - block:
@@ -33,12 +35,12 @@
             msg: Inventory filepath "{{ filepath }}"
         - lineinfile:
             path: "{{ filepath }}"
-            line: "[{{ group | default('DevNet-Standalone') }}]"
+            line: "[{{ host_group }}]"
             create: true
         # Update standalone servers (IMC) in the file
         - lineinfile:
             path: "{{ filepath }}"
-            insertafter: "^\\[{{ group | default('DevNet-Standalone') }}\\]"
+            insertafter: "^\\[{{ host_group }}\\]"
             regexp: "^{{ item.Name }} "
             # Each line of the inventory has the following:
             # Name server_moid=<Moid value> model=<Model value> boot_policy=<policy from tag> | 'na'

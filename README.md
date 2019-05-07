@@ -35,7 +35,7 @@ When developing modules in this repository, here are a few helpful commands to s
   ansible-doc <module_name>
   ```
 
-### install
+### Install
 - ansible must be installed
 ```
 sudo pip install ansible
@@ -45,9 +45,9 @@ sudo pip install ansible
 git clone https://github.com/ciscoucs/intersight-ansible
 ```
 
-### usage
+### Usage
 
-Authentication with the Intersight API requires that use of API keys that should be generated within the Intersight UI.  See (https://intersight.com/help) or (https://communities.cisco.com/docs/DOC-76947) for more information on generating and using API keys.
+Authentication with the Intersight API requires the use of API keys that should be generated within the Intersight UI.  See (https://intersight.com/help) or (https://communities.cisco.com/docs/DOC-76947) for more information on generating and using API keys.
 If you do not have an Intersight account, you can create one and claim devices in Intersight using the DevNet Intersight Sandbox at https://devnetsandbox.cisco.com/RM/Diagram/Index/a63216d2-e891-4856-9f27-309ca61ec862?diagramType=Topology
 Because Intersight has a single API endpoint, minimal setup is required in playbooks or variables to access the API.  Here's an example playbook:
 ```
@@ -66,23 +66,27 @@ Because Intersight has a single API endpoint, minimal setup is required in playb
 
 localhost (the Ansible controller) can be used without the need to specify any hosts or inventory.  Hosts can be specified to perform parallel actions.  An example of Server Firmware Update on multiple servers is provided by the server_firmware.yml playbook.
 
-You will need to provide your own inventory file and cusomtize any variables used in playbooks with settings for your environment.  This repo includes an example_inventory file with host groups for HX (DevNet-HX) and Standalone C-Series servers (DevNet-Standalone) and shared API key variables:
+If you're using playbooks in this repo, you will need to provide your own inventory file and cusomtize any variables used in playbooks with settings for your environment.  This repo includes an example_inventory file with host groups for HX (DevNet_HX), Standalone C-Series servers (DevNet_Standalone), and API key variables shared for DevNet host groups:
 ```
-[DevNet-HX]
+[DevNet_HX]
+sjc07-r13-500
+sjc07-r13-501
+sjc07-r13-502
+sjc07-r13-503
 
-[DevNet-Standalone]
+[DevNet_Standalone]
 
 [DevNet:children]
-DevNet-HX
-DevNet-Standalone
+DevNet_HX
+DevNet_Standalone
 
 [DevNet:vars]
 api_private_key=~/Downloads/SecretKey.txt
 api_key_id=...
 ```
-For demo purposes, you can copy the example_inventory file to a new file named inventory.  Edit the inventory file to provide your own api_private_key location and api_key_id for use in playbooks.
+For demo purposes, you can copy the example_inventory file to a new file named inventory.  Then, edit the inventory file to provide your own api_private_key location and api_key_id for use in playbooks.
 
-Once you've provided API key information in your local inventory file, the file can be automatically updated with data from your Intersight environment using the update_inventory.yml playbook.
+Once you've provided API key information, the inventory file can be automatically updated with data from your Intersight account using the update_inventory.yml playbook.
 
 Here are example command lines for creating your own inventory and running the update_inventory.yml playbook:
 ```
@@ -90,7 +94,7 @@ cp example_inventory inventory
 edit inventory with your api_private_key and api_key_id
 ansible-playbook -i inventory update_inventory.yml
 ```
-With an inventory for your Intersight account, you can now run playbooks to configure profiles, policies, and servers in Intersight:
+With an inventory for your Intersight account, you can now run playbooks to configure profiles/policies, and perform other server actions in Intersight:
 ```
 ansible-playbook -i inventory server_profiles.yml
 ansible-playbook -i inventory server_profiles.yml --tags deploy (note: this will deploy settings, run with --check to see what would change 1st)
@@ -99,5 +103,5 @@ ansible-playbook -i inventory server_actions.yml (note: by default this will Pow
 
 # Community:
 
-* We are on Slack - slack requires registration, but the ucspython team is open invitation to
-  anyone to register [here](https://ucspython.herokuapp.com)
+* We are on Slack (https://ciscoucs.slack.com/) - Slack requires registration, but the ucspython team is open invitation to
+  anyone.  Click [here](https://ucspython.herokuapp.com) to register 
