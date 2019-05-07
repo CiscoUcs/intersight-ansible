@@ -10,45 +10,141 @@
 - hosts: "{{ group | default('DevNet-Standalone') }}"
   connection: local
   gather_facts: false
+  vars:
+    # Create an anchor for api_info that can be used throughout the file
+    api_info: &api_info
+      api_private_key: "{{ api_private_key }}"
+      api_key_id: "{{ api_key_id }}"
+      api_uri: "{{ api_uri | default(omit) }}"
+      validate_certs: "{{ validate_certs | default(omit) }}"
+      state: "{{ state | default(omit) }}"
+    # Server Profile name default
+    profile_name: "SP-{{ inventory_hostname }}"
   tasks:
     #
     # Configure profiles specific to server (run for each server in the inventory)
     # Server Profiles role will register a profile_resp and profile_resp list (from all hosts) can be used by policy tasks
-    # The role supports Deploy or other user defined profile_action to be used with --tags deploy.  Do not add tags here for the import
     #
-    - import_role:
-        name: service_profiles/server_profiles
-      vars:
-        profile_name: "SP-{{ inventory_hostname }}"
-      # Use the localhost's environment and Python
+    - name: "Configure {{ profile_name }} Server Profile"
+      intersight_rest_api:
+        <<: *api_info
+        resource_path: /server/Profiles
+        query_params:
+          $filter: "Name eq '{{ profile_name }}'"
+        api_body: {
+          "Name": "{{ profile_name }}",
+          "AssignedServer": {
+            "Moid": "{{ server_moid }}"
+          }
+        }
+      register: profile_resp
+      when: server_moid is defined
       delegate_to: localhost
+      tags: server_profiles
+    # Deploy (or perform other profile_action) when tag is set, e.g., --tags deploy
+    # profile_action can be given on the command line if needed, e.g., ansible-playbook ... -e profile_action=Unassign
+    - name: Deploy (or user defined profile_action) Server Profile
+      intersight_rest_api:
+        <<: *api_info
+        resource_path: /server/Profiles
+        query_params:
+          $filter: "Name eq '{{ profile_name }}'"
+        api_body: {
+          "Action": "{{ profile_action | default('Deploy') }}"
+        }
+      delegate_to: localhost
+      tags: [never, deploy]
     #
     # Enclose policy tasks in a block that runs once
+    # Policy API body is specified in a role specific vars section for each role import
+    # See https://intersight.com/apidocs/ or https://intersight.com/mobrowser/ for information on setting resource_path and api_body
     #
     - block:
         # Boot Order policy config
         - import_role:
-            name: policies/server_policies/boot_order
+            name: policies/server_policies
           vars:
-            boot_policy: vmedia-local-disk
-            # optionally set a disk_slot for boot_order policy (e.g., MRAID, HBA, or slot number)
-            # disk_slot: HBA      # Use the localhost's environment and Python
+            resource_path: /boot/PrecisionPolicies
+            api_body: {
+              "Name": "vmedia-local-disk",
+              "ConfiguredBootMode": "Legacy",
+              "BootDevices": [
+                {
+                  "ObjectType": "boot.VirtualMedia",
+                  "Enabled": true,
+                  "Name": "remote-vmedia",
+                  "Subtype": "cimc-mapped-dvd"
+                },
+                {
+                  "ObjectType": "boot.LocalDisk",
+                  "Enabled": true,
+                  "Name": "localdisk",
+                  "Slot": "",
+                  "Bootloader": null
+                }
+              ],
+            }
           tags: boot_order
         # Virtual Media policy config
         - import_role:
-            name: policies/server_policies/virtual_media
+            name: policies/server_policies
           vars:
-            vmedia_policy: nfs-cdd
-            remote_file: VMware_ESXi_6.7.0_10302608_Custom_Cisco_6.7.1.1.iso
-            remote_path: /mnt/SHARE/ISOS/ESX
-            remote_hostname: 172.28.224.77
+            resource_path: /vmedia/Policies
+            api_body: {
+              "Name": "nfs-cdd",
+              "Mappings": [
+                {
+                  "MountProtocol": "nfs",
+                  "VolumeName": "nfs-cdd",
+                  "DeviceType": "cdd",
+                  "HostName": "172.28.224.77",
+                  "RemotePath": "/mnt/SHARE/ISOS/ESX",
+                  "RemoteFile": "VMware_ESXi_6.7.0_10302608_Custom_Cisco_6.7.1.1.iso"
+                }
+              ]
+            }
           tags: virtual_media
         # Bios policy config
         - import_role:
-            name: policies/server_policies/bios
+            name: policies/server_policies
           vars:
-            bios_policy: adaptive-memory
+            resource_path: /bios/Policies
+            api_body: {
+              "Name": "adaptive-memory",
+              "CiscoAdaptiveMemTraining": "enabled"
+            }
           tags: bios
+        # Snmp policy config
+        - import_role:
+            name: policies/server_policies
+          vars:
+            resource_path: /snmp/Policies
+            api_body: {
+              "Name": "snmp-local",
+              "AccessCommunityString": "galaxy",
+              "CommunityAccess": "Disabled",
+              "Enabled": true,
+              "EngineId": "",
+              "SnmpPort": 161,
+              "SnmpTraps": [],
+              "SnmpUsers": [
+                {
+                  "ObjectType": "snmp.User",
+                  "AuthType": "SHA",
+                  "IsAuthPasswordSet": true,
+                  "IsPrivacyPasswordSet": true,
+                  "Name": "TMEUCS",
+                  "PrivacyType": "AES",
+                  "SecurityLevel": "AuthPriv",
+                  "AuthPassword": "password",
+                  "PrivacyPassword": "password"
+                }
+              ],
+              "SysContact": "Cisco TME",
+              "SysLocation": "Cisco TME DC",
+              "TrapCommunity": "galaxy"
+            }
+          tags: snmp
       # Policies are common, so only run this block once and not for every host
       run_once: true
       delegate_to: localhost

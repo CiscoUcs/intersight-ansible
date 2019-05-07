@@ -8,10 +8,6 @@
 - hosts: "{{ group | default('DevNet-Standalone') }}"
   connection: local
   gather_facts: false
-  vars:
-  # If your inventory or host/group_vars don't specify required api key information, you can set directly below:
-  # api_private_key: ~/Downloads/SecretKey.txt
-  # api_key_id: 5a3404ac3768393836093cab/5b02fa7e6d6c356772394170/5b02fad36d6c356772394449
   tasks:
     - import_role:
         name: servers/actions
@@ -22,6 +18,6 @@
         power_state: PowerOn
         # led locator state
         # options: On, Off, None
-        # Can override on the command line: ansible-playbook ... -e power_state=Off
+        # Can override on the command line: ansible-playbook ... -e locator_state=Off
         # locator_state: On
       delegate_to: localhost
