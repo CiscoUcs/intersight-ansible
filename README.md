@@ -8,7 +8,7 @@ This repo represents the working copy of modules for Cisco Intersight that will 
 
 There is currently not support for scripted install/uninstall to avoid collision with Ansible hosted modules and ongoing maintenance.  If you are running playbooks from the top-level directory of this repository (with library and module_utils subdirectories) you should not need any other setup to use the modules.
 
-If needed, you can specfiy this repo as a library and module_utils location with env variables or command line options (e.g., ANSIBLE_LIBRARY=./library ansible-playbook ..).  Alternatively, your .ansible.cfg file can be updated to use this repo as the library path with the following:
+If needed, you can specfiy this repo as a library and module_utils location with env variables or command line options (e.g., ANSIBLE_LIBRARY=./library ansible-playbook ..).  Alternatively, your .ansible.cfg file can be updated to use this repo as the library path and module_utils path with the following:
 ```
 [defaults]
 library = <path to intersight-ansible clone>/library
@@ -20,6 +20,7 @@ module_utils = <path to intersight-ansible clone>/module_utils
 | Configuration Category | Configuration Task | Module Name | Status (planned for Ansible 2.6, Proof of Concept, TBD |
 | ---------------------- | ------------------ | ----------- | ------ |
 | General purpose resource config | Any (with user provided data) | intersight_rest_api | Planned for 2.8 |
+| Resource data collection/inventory | GET servers inventory data | intersight_facts | Planned for 2.8 |
 
 ### Ansible Development Notes
 
@@ -53,7 +54,7 @@ Because Intersight has a single API endpoint, minimal setup is required in playb
 ---
 - hosts: localhost
   connection: local
-  gather_facts: no
+  gather_facts: false
   tasks:
   - name: Configure Boot Policy
     intersight_rest_api:
@@ -63,18 +64,37 @@ Because Intersight has a single API endpoint, minimal setup is required in playb
       api_body: {
 ```
 
-localhost (the Ansible controller) can be used without the need to specify any hosts or inventory.  Hosts can also be specified to perform parallel actions.  An example of Server Firmware Update on multiple servers is provided by the rest_update_server.yml playbook:
+localhost (the Ansible controller) can be used without the need to specify any hosts or inventory.  Hosts can be specified to perform parallel actions.  An example of Server Firmware Update on multiple servers is provided by the server_firmware.yml playbook.
 
-You will need to provide your own inventory file and cusomtize any variables in the playbook with settings for your environment.  Here is an example inventory file with 2 servers identified by name as shown in the Intersight UI:
+You will need to provide your own inventory file and cusomtize any variables used in playbooks with settings for your environment.  This repo includes an example_inventory file with host groups for HX (DevNet-HX) and Standalone C-Series servers (DevNet-Standalone) and shared API key variables:
 ```
-[servers]
-C220-WZP21420X9E
-C220M5-WZP21420XAQ
+[DevNet-HX]
+
+[DevNet-Standalone]
+
+[DevNet:children]
+DevNet-HX
+DevNet-Standalone
+
+[DevNet:vars]
+api_private_key=~/Downloads/SecretKey.txt
+api_key_id=...
 ```
-Here are example command lines for running the rest_boot_policy.yml and rest_update_server.yml playbooks to configure policies and servers in Intersight:
+For demo purposes, you can copy the example_inventory file to a new file named inventory.  Edit the inventory file to provide your own api_private_key location and api_key_id for use in playbooks.
+
+Once you've provided API key information in your local inventory file, the file can be automatically updated with data from your Intersight environment using the update_inventory.yml playbook.
+
+Here are example command lines for creating your own inventory and running the update_inventory.yml playbook:
 ```
-ansible-playbook -i inventory rest_boot_policy.yml
-ansible-playbook -i inventory rest_update_server.yml
+cp example_inventory inventory
+edit inventory with your api_private_key and api_key_id
+ansible-playbook -i inventory update_inventory.yml
+```
+With an inventory for your Intersight account, you can now run playbooks to configure profiles, policies, and servers in Intersight:
+```
+ansible-playbook -i inventory server_profiles.yml
+ansible-playbook -i inventory server_profiles.yml --tags deploy (note: this will deploy settings, run with --check to see what would change 1st)
+ansible-playbook -i inventory server_actions.yml (note: by default this will PowerOn all servers, view the playbook to see other options)
 ```
 
 # Community:
