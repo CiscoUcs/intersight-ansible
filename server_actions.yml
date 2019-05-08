@@ -1,11 +1,11 @@
 ---
 #
-# The hosts group used is provided by the group variable or defaulted to 'DevNet_Standalone'.
+# The hosts group used is provided by the group variable or defaulted to 'Intersight_Standalone'.
 # You can specify a specific host (or host group) on the command line:
 #   ansible-playbook ... -e group=<your host group>
 #   e.g., ansible-playbook server_profiles.yml -e group=TME_Demo
 #
-- hosts: "{{ group | default('DevNet_Standalone') }}"
+- hosts: "{{ group | default('Intersight_Standalone') }}"
   connection: local
   gather_facts: false
   tasks:

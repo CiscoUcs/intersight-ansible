@@ -2,12 +2,12 @@
 #
 # Configure Server Profiles and Policies
 #
-# The hosts group used is provided by the group variable or defaulted to 'DevNet_Standalone'.
+# The hosts group used is provided by the group variable or defaulted to 'Intersight_Standalone'.
 # You can specify a specific host (or host group) on the command line:
 #   ansible-playbook ... -e group=<your host group>
 #   e.g., ansible-playbook server_profiles.yml -e group=TME_Demo
 #
-- hosts: "{{ group | default('DevNet_Standalone') }}"
+- hosts: "{{ group | default('Intersight_Standalone') }}"
   connection: local
   gather_facts: false
   vars:
@@ -145,6 +145,87 @@
               "TrapCommunity": "galaxy"
             }
           tags: snmp
+        # Ldap policy config
+        - block:
+            # for policies that reference other policies, config the basic policies 1st and then reference in the main policy
+            # Ldap Providers
+            - name: "Configure LDAP Providers"
+              intersight_rest_api:
+                <<: *api_info
+                resource_path: /iam/LdapProviders
+                query_params:
+                  $filter: "Server eq 'tmedemo.cisco.com'"
+                api_body: {
+                  "Port": 389,
+                  "Server": "tmedemo.cisco.com"
+                }
+              register: ldap_provider
+            # Role used by Ldap Group
+            - name: "Get EndPoint Role for LDAP Groups"
+              intersight_rest_api:
+                <<: *api_info
+                resource_path: /iam/EndPointRoles
+                query_params:
+                  $filter: "Name eq 'admin'"
+              register: endpoint_role
+            # Ldap Groups
+            - name: "Configure LDAP Groups"
+              intersight_rest_api:
+                <<: *api_info
+                resource_path: /iam/LdapGroups
+                query_params:
+                  $filter: "Name eq 'demo1'"
+                api_body: {
+                  "Domain": "cisco.com",
+                  "Name": "demo1",
+                  "Role": "{{ endpoint_role.api_response.Moid }}"
+                }
+              register: ldap_group
+            # Ldap Policies with references to Providers/Groups configured above
+            - import_role:
+                name: policies/server_policies
+              vars:
+                resource_path: /iam/LdapPolicies
+                api_body: {
+                  "Name": "ldap-local",
+                  "BaseProperties": {
+                    "ObjectType": "iam.LdapBaseProperties",
+                    "Attribute": "CiscoAvPair",
+                    "BaseDn": "DC=CISCO,DC=COM",
+                    "BindDn": "",
+                    "BindMethod": "LoginCredentials",
+                    "Domain": "cisco.com",
+                    "EnableEncryption": true,
+                    "EnableGroupAuthorization": false,
+                    "Filter": "sAMAccountName",
+                    "GroupAttribute": "memberOf",
+                    "IsPasswordSet": false,
+                    "NestedGroupSearchDepth": 128,
+                    "Timeout": 20
+                  },
+                  "DnsParameters": {
+                    "ObjectType": "iam.LdapDnsParameters",
+                    "SearchDomain": "",
+                    "SearchForest": "",
+                    "Source": "Extracted"
+                  },
+                  "EnableDns": false,
+                  "Enabled": true,
+                  "UserSearchPrecedence": "LocalUserDb",
+                  "Groups": [
+                    {
+                      "ObjectType": "iam.LdapGroup",
+                      "Moid": "{{ ldap_group.api_response.Moid }}",
+                    }
+                  ],
+                  "Providers": [
+                    {
+                      "ObjectType": "iam.LdapProvider",
+                      "Moid": "{{ ldap_provider.api_response.Moid }}",
+                    }
+                  ]
+                }
+          tags: ldap
       # Policies are common, so only run this block once and not for every host
       run_once: true
       delegate_to: localhost

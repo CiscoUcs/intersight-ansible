@@ -1,15 +1,15 @@
-[DevNet_HX]
+[Intersight_HX]
 sjc07-r13-500
 sjc07-r13-501
 sjc07-r13-502
 sjc07-r13-503
 
-[DevNet_Standalone]
+[Intersight_Standalone]
 
-[DevNet:children]
-DevNet_HX
-DevNet_Standalone
+[Intersight:children]
+Intersight_HX
+Intersight_Standalone
 
-[DevNet:vars]
+[Intersight:vars]
 api_private_key=~/Downloads/SecretKey.txt
 api_key_id=5a3404ac3768393836093cab/5b02fa7e6d6c356772394170/5b02fad36d6c356772394449
