@@ -66,21 +66,21 @@ Because Intersight has a single API endpoint, minimal setup is required in playb
 
 localhost (the Ansible controller) can be used without the need to specify any hosts or inventory.  Hosts can be specified to perform parallel actions.  An example of Server Firmware Update on multiple servers is provided by the server_firmware.yml playbook.
 
-If you're using playbooks in this repo, you will need to provide your own inventory file and cusomtize any variables used in playbooks with settings for your environment.  This repo includes an example_inventory file with host groups for HX (DevNet_HX), Standalone C-Series servers (DevNet_Standalone), and API key variables shared for DevNet host groups:
+If you're using playbooks in this repo, you will need to provide your own inventory file and cusomtize any variables used in playbooks with settings for your environment.  This repo includes an example_inventory file with host groups for HX (Intersight_HX), Standalone C-Series servers (Intersight_Standalone), and API key variables shared for Intersight host groups:
 ```
-[DevNet_HX]
+[Intersight_HX]
 sjc07-r13-500
 sjc07-r13-501
 sjc07-r13-502
 sjc07-r13-503
 
-[DevNet_Standalone]
+[Intersight_Standalone]
 
-[DevNet:children]
-DevNet_HX
-DevNet_Standalone
+[Intersight:children]
+Intersight_HX
+Intersight_Standalone
 
-[DevNet:vars]
+[Intersight:vars]
 api_private_key=~/Downloads/SecretKey.txt
 api_key_id=...
 ```

@@ -2,12 +2,12 @@
 #
 # HyperFlex Cluster Profile Actions (assign, deploy)
 #
-# The hosts group used is provided by the group variable or defaulted to 'DevNet_HX'.
+# The hosts group used is provided by the group variable or defaulted to 'Intersight_HX'.
 # You can specify a specific host (or host group) on the command line:
 #   ansible-playbook ... -e group=<your host group>
 #   e.g., ansible-playbook server_profiles.yml -e group=TME_Demo
 #
-- hosts: "{{ group | default('DevNet_HX') }}"
+- hosts: "{{ group | default('Intersight_HX') }}"
   connection: local
   gather_facts: false
   vars:
