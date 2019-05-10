@@ -243,6 +243,20 @@
                   ]
                 }
           tags: ldap
+        # LAN Connectivity policy config
+        - import_role:
+            name: policies/server_policies/lan_connectivity
+          vars:
+            policy_name: mvp_lan_connectivity
+            # Ethernet policies below will be created with default values if no other vars are provided here
+            ethernet_adapter: mvp_eth_adatper
+            ethernet_network: mvp_eth_network
+            ethernet_qos: mvp_eth_qos
+            eth0_slot_id: MLOM
+            eth0_uplink: 0
+            eth1_slot_id: MLOM
+            eth1_uplink: 1
+          tags: lan
       # Policies are common, so only run this block once and not for every host
       run_once: true
       delegate_to: localhost
