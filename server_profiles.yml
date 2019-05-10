@@ -147,41 +147,8 @@
           tags: snmp
         # Ldap policy config
         - block:
-            # for policies that reference other policies, config the basic policies 1st and then reference in the main policy
-            # Ldap Providers
-            - name: "Configure LDAP Providers"
-              intersight_rest_api:
-                <<: *api_info
-                resource_path: /iam/LdapProviders
-                query_params:
-                  $filter: "Server eq 'tmedemo.cisco.com'"
-                api_body: {
-                  "Port": 389,
-                  "Server": "tmedemo.cisco.com"
-                }
-              register: ldap_provider
-            # Role used by Ldap Group
-            - name: "Get EndPoint Role for LDAP Groups"
-              intersight_rest_api:
-                <<: *api_info
-                resource_path: /iam/EndPointRoles
-                query_params:
-                  $filter: "Name eq 'admin'"
-              register: endpoint_role
-            # Ldap Groups
-            - name: "Configure LDAP Groups"
-              intersight_rest_api:
-                <<: *api_info
-                resource_path: /iam/LdapGroups
-                query_params:
-                  $filter: "Name eq 'demo1'"
-                api_body: {
-                  "Domain": "cisco.com",
-                  "Name": "demo1",
-                  "Role": "{{ endpoint_role.api_response.Moid }}"
-                }
-              register: ldap_group
-            # Ldap Policies with references to Providers/Groups configured above
+            # Main Ldap Policy which will be referenced by other Ldap policies as needed
+            # Role will register a policy_resp which can be used as needed
             - import_role:
                 name: policies/server_policies
               vars:
@@ -203,25 +170,75 @@
                     "NestedGroupSearchDepth": 128,
                     "Timeout": 20
                   },
-                  "DnsParameters": {
-                    "ObjectType": "iam.LdapDnsParameters",
-                    "SearchDomain": "",
-                    "SearchForest": "",
-                    "Source": "Extracted"
-                  },
                   "EnableDns": false,
                   "Enabled": true,
-                  "UserSearchPrecedence": "LocalUserDb",
-                  "Groups": [
+                  "UserSearchPrecedence": "LocalUserDb"
+                }
+            # Ldap Providers
+            - name: "Configure LDAP Providers"
+              intersight_rest_api:
+                <<: *api_info
+                resource_path: /iam/LdapProviders
+                query_params:
+                  $filter: "Server eq 'tmedemo.cisco.com'"
+                api_body: {
+                  "LdapPolicy": {
+                    "Moid": "{{ policy_resp.api_response.Moid }}"
+                  },
+                  "Port": 3268,
+                  "Server": "tmedemo.cisco.com"
+                }
+            # EndPoint Role used by Ldap Group
+            - name: "Get EndPoint Role for LDAP Groups"
+              intersight_rest_api:
+                <<: *api_info
+                resource_path: /iam/EndPointRoles
+                query_params:
+                  $filter: "Name eq 'user'"
+              register: endpoint_role2
+            # Ldap Group Register
+            - name: "Configure LDAP Groups"
+              intersight_rest_api:
+                <<: *api_info
+                resource_path: /iam/LdapGroups
+                query_params:
+                  $filter: "Name eq 'tme-user'"
+                api_body: {
+                  "LdapPolicy": {
+                    "Moid": "{{ policy_resp.api_response.Moid }}"
+                  },
+                  "Domain": "cisco.com",
+                  "Name": "tme-user",
+                  "EndPointRole": [
                     {
-                      "ObjectType": "iam.LdapGroup",
-                      "Moid": "{{ ldap_group.api_response.Moid }}",
+                      "Moid": "{{ endpoint_role2.api_response.Moid }}"
                     }
-                  ],
-                  "Providers": [
+                  ]
+                }
+            # EndPoint Role used by Ldap Group
+            - name: "Get EndPoint Role for LDAP Groups"
+              intersight_rest_api:
+                <<: *api_info
+                resource_path: /iam/EndPointRoles
+                query_params:
+                  $filter: "Name eq 'readonly'"
+              register: endpoint_role3
+            # Ldap Group Register
+            - name: "Configure LDAP Groups"
+              intersight_rest_api:
+                <<: *api_info
+                resource_path: /iam/LdapGroups
+                query_params:
+                  $filter: "Name eq 'tme-readonly'"
+                api_body: {
+                  "LdapPolicy": {
+                    "Moid": "{{ policy_resp.api_response.Moid }}"
+                  },
+                  "Domain": "cisco.com",
+                  "Name": "tme-readonly",
+                  "EndPointRole": [
                     {
-                      "ObjectType": "iam.LdapProvider",
-                      "Moid": "{{ ldap_provider.api_response.Moid }}",
+                      "Moid": "{{ endpoint_role3.api_response.Moid }}"
                     }
                   ]
                 }
