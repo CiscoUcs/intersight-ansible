@@ -14,6 +14,7 @@
     query_params:
       $filter: "Name eq '{{ api_body.Name }}'"
     api_body: "{{ api_body }}"
+  register: policy_resp
 # Append profile_resp list to policy
 - block:
     # Create a list of all host's profile Moids
