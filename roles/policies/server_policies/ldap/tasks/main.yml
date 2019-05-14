@@ -1,0 +1,74 @@
+---
+- name: "Configure {{ policy_name }} LDAP Policy"
+  # Role will register a policy_resp
+  import_role:
+    name: policies/server_policies
+  vars:
+    resource_path: /iam/LdapPolicies
+    api_body: {
+      "Name": "{{ policy_name }}",
+      "Enabled": true,
+      "BaseProperties": {
+        "BaseDn": "{{ base_dn }}",
+        "Domain": "{{ domain }}",
+        "Timeout": "{{ timeout }}",
+        "EnableEncryption": "{{ enable_encryption }}",
+        "Filter": "{{ filter }}",
+        "GroupAttribute": "{{ group_attribute }}",
+        "Attribute": "{{ attribute }}"
+      },
+    }
+# Ldap Providers
+- name: "Configure LDAP Provider"
+  vars:
+    # Create an anchor for api_info that can be used throughout the file
+    api_info: &api_info
+      api_private_key: "{{ api_private_key }}"
+      api_key_id: "{{ api_key_id }}"
+      api_uri: "{{ api_uri | default(omit) }}"
+      validate_certs: "{{ validate_certs | default(omit) }}"
+      state: "{{ state | default(omit) }}"
+  intersight_rest_api:
+    <<: *api_info
+    resource_path: /iam/LdapProviders
+    query_params:
+      $filter: "LdapPolicy.Moid eq '{{ policy_resp.api_response.Moid }}' and Server eq '{{ item.hostname }}' and Port eq {{ server_port }}"
+    api_body: {
+      "LdapPolicy": {
+        "Moid": "{{ policy_resp.api_response.Moid }}"
+      },
+      "Server": "{{ item.hostname }}",
+      "Port": "{{ server_port }}"
+    }
+  loop: "{{ server_list }}"
+# EndPoint Role used by Ldap Group
+- name: "Get EndPoint Role for LDAP Groups"
+  intersight_rest_api:
+    <<: *api_info
+    resource_path: /iam/EndPointRoles
+    query_params:
+      $filter: "Name eq '{{ item.role }}'"
+  loop: "{{ group_list }}"
+  register: endpoint_role
+# Ldap Group Register
+- name: "Configure LDAP Groups"
+  intersight_rest_api:
+    <<: *api_info
+    resource_path: /iam/LdapGroups
+    query_params:
+      $filter: "LdapPolicy.Moid eq '{{ policy_resp.api_response.Moid }}' and Name eq '{{ item.item.name }}' and Domain eq '{{ item.item.domain }}'"
+    api_body: {
+      "LdapPolicy": {
+        "Moid": "{{ policy_resp.api_response.Moid }}"
+      },
+      "Name": "{{ item.item.name }}",
+      "Domain": "{{ item.item.domain }}",
+      "EndPointRole": [
+        {
+          "Moid": "{{ item.api_response.Moid }}"
+        }
+      ]
+    }
+  loop: "{{ endpoint_role.results }}"
+  loop_control:
+    label: "{{ item.item.name }}"
