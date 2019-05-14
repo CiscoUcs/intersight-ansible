@@ -1,6 +1,6 @@
 ---
 - name: "Configure {{ policy_name }} LAN Connectivity Policy"
-  # role will register a policy_resp
+  # Role will register a policy_resp
   import_role:
     name: policies/server_policies
   vars:
@@ -23,7 +23,8 @@
     query_params:
       $filter: "Name eq '{{ ethernet_qos }}'"
     api_body: {
-      "Name": "{{ ethernet_qos }}"
+      "Name": "{{ ethernet_qos }}",
+      "Mtu": "{{ mtu }}"
     }
   register: eth_qos_resp
 - name: "Configure {{ ethernet_network }} Ethernet Network Policy"
@@ -33,7 +34,11 @@
     query_params:
       $filter: "Name eq '{{ ethernet_network }}'"
     api_body: {
-      "Name": "{{ ethernet_network }}"
+      "Name": "{{ ethernet_network }}",
+      "VlanSettings": {
+        "Mode": "{{ vlan_mode }}",
+        "DefaultVlan": "{{ default_vlan }}"
+      }
     }
   register: eth_network_resp
 - name: "Configure {{ ethernet_adapter }} Ethernet Adapter Policy"
@@ -46,19 +51,20 @@
       "Name": "{{ ethernet_adapter }}"
     }
   register: eth_adapter_resp
-# The 2 tasks below should be in a loop, but loop vars are being converted to strings and ints are needed for the API
-- name: "Configure eth0 vNIC"
+# vNIC configuration
+- name: "Configure vNIC"
   intersight_rest_api:
     <<: *api_info
     resource_path: /vnic/EthIfs
     query_params:
-      $filter: "Name eq 'eth0'"
+      $filter: "LanConnectivityPolicy.Moid eq '{{ policy_resp.api_response.Moid }}' and Name eq '{{ item.name }}'"
+    # Note that order and uplink are hardcoded below to the loop index (e.g., order/uplink 0 for 1st list element, 1 for next, etc.)
     api_body: {
-      "Name": "eth0",
-      "Order": 0,
+      "Name": "{{ item.name }}",
+      "Order": "{{ index }}",
       "Placement": {
-        "Id": "{{ eth0_slot_id }}",
-        "Uplink": "{{ eth0_uplink }}"
+        "Id": "{{ item.slot_id }}",
+        "Uplink": "{{ index }}"
       },
       "EthAdapterPolicy": {
         "Moid": "{{ eth_adapter_resp.api_response.Moid }}"
@@ -73,29 +79,6 @@
         "Moid": "{{ policy_resp.api_response.Moid }}"
       }
     }
-- name: "Configure eth1 vNIC"
-  intersight_rest_api:
-    <<: *api_info
-    resource_path: /vnic/EthIfs
-    query_params:
-      $filter: "Name eq 'eth1'"
-    api_body: {
-      "Name": "eth1",
-      "Order": 1,
-      "Placement": {
-        "Id": "{{ eth1_slot_id }}",
-        "Uplink": "{{ eth1_uplink }}"
-      },
-      "EthAdapterPolicy": {
-        "Moid": "{{ eth_adapter_resp.api_response.Moid }}"
-      },
-      "EthNetworkPolicy": {
-        "Moid": "{{ eth_network_resp.api_response.Moid }}"
-      },
-      "EthQosPolicy": {
-        "Moid": "{{ eth_qos_resp.api_response.Moid }}"
-      },
-      "LanConnectivityPolicy": {
-        "Moid": "{{ policy_resp.api_response.Moid }}"
-      }
-    }
+  loop: "{{ vnic_list }}"
+  loop_control:
+    index_var: index
