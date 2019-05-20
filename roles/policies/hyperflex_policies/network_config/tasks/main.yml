@@ -30,6 +30,7 @@
           "ObjectType": "hyperflex.NamedVlan",
           "VlanId":"{{ hx_vm_vlan }}"
         }
-      ]
+      ],
+      "UplinkSpeed": "1G"
     }
   register: cluster_network
