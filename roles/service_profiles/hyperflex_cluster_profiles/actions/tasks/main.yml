@@ -43,6 +43,7 @@
   loop: "{{ inventory.results }}"
   loop_control:
     index_var: idx
+    label: "{{ item.intersight_servers[0].Name }}"
 # Perform action when not already in the desired state
 - name: "Perform Action on {{ hx_profile_name }} Profile"
   intersight_rest_api:

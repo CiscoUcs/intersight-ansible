@@ -6,6 +6,6 @@ hx_mgmt_ip_end: 172.28.224.167
 hx_dp_ip_start: 172.28.224.168
 hx_dp_ip_end: 172.28.224.170
 hx_servers:
-  - C220-WZP2204090C
   - C220-WZP2204097Z
+  - C220-WZP2204090C
   - C220-WZP220400B3

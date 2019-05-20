@@ -202,7 +202,6 @@
                 slot_id: MLOM
               - name: eth1
                 slot_id: MLOM
-            eth1_slot_id: MLOM
           tags: lan
       # Policies are common, so only run this block once and not for every host
       run_once: true

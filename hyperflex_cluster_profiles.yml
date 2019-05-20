@@ -34,17 +34,19 @@
           vars:
             hx_local_credential_policy: devnet-creds
             hx_hypervisor_admin: root
-            hx_hypervisor_password: <password>
-            hx_dp_root_password: <password>
+            # Set the variables below in a group_vars/all file or similar location for Ansible lookup
+            # hx_hypervisor_password: <password>
+            # hx_dp_root_password: <password>
           tags: ['security']
         # vCenter
         - import_role:
             name: policies/hyperflex_policies/vcenter
           vars:
             hx_vcenter_config_policy: devnet-vcenter
-            hx_vcenter_hostname: 172.28.224.49
+            hx_vcenter_hostname: 172.28.225.220
             hx_vcenter_username: administrator@vsphere.local
-            hx_vcenter_password: <password>
+            # Set the variables below in a group_vars/all file or similar location for Ansible lookup
+            # hx_vcenter_password: <password>
             hx_vcenter_datacenter: SJC07
           tags: ['vcenter']
         # Storage Config
@@ -92,7 +94,7 @@
         hx_mgmt_netmask: 255.255.254.0
         hx_mgmt_gateway: 172.28.224.1
         hx_profile_name: "{{ inventory_hostname }}"
-        hx_data_platform_version: 3.5(2a)
+        hx_data_platform_version: 3.5(2b)
         hx_mgmt_platform: EDGE
-        hx_profile_description: 3 node Edge M5 cluster
+        hx_profile_description: Edge M5 cluster
       delegate_to: localhost

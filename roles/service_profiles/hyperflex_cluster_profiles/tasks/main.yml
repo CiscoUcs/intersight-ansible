@@ -16,7 +16,6 @@
       $filter: "Name eq '{{ hx_profile_name }}'"
     api_body: {
       "Name":"{{ hx_profile_name }}",
-      "HxdpVersion":"{{ hx_data_platform_version }}",
       "MgmtPlatform":"{{ hx_mgmt_platform }}",
       "Description":"{{ hx_profile_description }}",
       "StorageDataVlan":{
@@ -27,6 +26,22 @@
         {
           "Key":"Demo",
           "Value":"Yes"
+        }
+      ]
+    }
+  register: profile_resp
+- name: "Configure HyperFlex versions"
+  intersight_rest_api:
+    <<: *api_info
+    resource_path: /hyperflex/SoftwareVersionPolicies
+    query_params:
+      $filter: "Name eq '{{ hx_profile_name }}-software-version-policy'"
+    api_body: {
+      "Name":"{{ hx_profile_name }}-software-version-policy",
+      "HxdpVersion":"{{ hx_data_platform_version }}",
+      "ClusterProfiles": [
+        {
+          "Moid": "{{ profile_resp.api_response.Moid }}"
         }
       ]
     }
