@@ -16,7 +16,7 @@
     api_body: {
       "Name": "{{ hx_local_credential_policy }}",
       "HypervisorAdmin":"{{ hx_hypervisor_admin }}",
-      "HypervisorAdminPwd":"{{ hx_hypervisor_password }}",
-      "HxdpRootPwd":"{{ hx_dp_root_password }}"
+      "HypervisorAdminPwd":"{{ hx_hypervisor_password | default(omit) }}",
+      "HxdpRootPwd":"{{ hx_dp_root_password | default(omit) }}"
     }
   register: local_credential

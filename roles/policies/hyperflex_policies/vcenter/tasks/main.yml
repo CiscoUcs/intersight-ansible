@@ -17,7 +17,7 @@
       "Name":"{{ hx_vcenter_config_policy }}",
       "Hostname":"{{ hx_vcenter_hostname }}",
       "Username":"{{ hx_vcenter_username }}",
-      "Password":"{{ hx_vcenter_password }}",
+      "Password":"{{ hx_vcenter_password | default(omit) }}",
       "DataCenter":"{{ hx_vcenter_datacenter }}"
     }
   register: vcenter
