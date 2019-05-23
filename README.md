@@ -100,7 +100,10 @@ ansible-playbook -i inventory server_profiles.yml
 ansible-playbook -i inventory server_profiles.yml --tags deploy (note: this will deploy settings, run with --check to see what would change 1st)
 ansible-playbook -i inventory server_actions.yml (note: by default this will PowerOn all servers, view the playbook to see other options)
 ```
-
+You can also create a detailed server inventory file (saved to a local <server_name>_ inventory.json file) with the following command:
+```
+ansible-playbook -i inventory get_servers_inventory.yml
+```
 # Community:
 
 * We are on Slack (https://ciscoucs.slack.com/) - Slack requires registration, but the ucspython team is open invitation to
