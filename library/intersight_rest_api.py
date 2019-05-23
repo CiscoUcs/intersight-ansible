@@ -40,6 +40,13 @@ options:
     description:
     - The paylod for API requests used to modify resources.
     type: dict
+  return_list:
+    description:
+    - If C(yes), will return a list of API results in the api_response.
+    - By default only the 1st element of the API Results list is returned.
+    - Can only be used with GET operations.
+    type: bool
+    default: no
   state:
     description:
     - If C(present), will verify the resource is present and will create if needed.
@@ -132,19 +139,22 @@ from ansible.module_utils.six import iteritems
 
 def get_resource(intersight):
     '''
-    GET a resource and return the 1st element found
+    GET a resource and return the 1st element found or the full Results list
     '''
     options = {
         'http_method': 'get',
         'resource_path': intersight.module.params['resource_path'],
         'query_params': intersight.module.params['query_params'],
     }
-    response_dict = intersight.call_api(**options)
-    if response_dict.get('Results'):
-        # return the 1st list element
-        response_dict = response_dict['Results'][0]
+    response = intersight.call_api(**options)
+    if response.get('Results'):
+        if intersight.module.params['return_list']:
+            response = response['Results']
+        else:
+            # return the 1st list element
+            response = response['Results'][0]
 
-    return response_dict
+    return response
 
 
 def compare_lists(expected_list, actual_list):
@@ -227,12 +237,16 @@ def main():
         query_params=dict(type='dict', default={}),
         update_method=dict(type='str', choices=['patch', 'post'], default='patch'),
         api_body=dict(type='dict', default={}),
+        return_list=dict(type='bool', default=False),
         state=dict(type='str', choices=['absent', 'present'], default='present'),
     )
 
     module = AnsibleModule(
         argument_spec,
         supports_check_mode=True,
+        mutually_exclusive=[
+            ['return_list', 'api_body', 'state'],
+        ],
     )
 
     intersight = IntersightModule(module)

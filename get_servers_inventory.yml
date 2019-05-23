@@ -1,0 +1,37 @@
+---
+#
+# The hosts group used is provided by the group variable or defaulted to 'Intersight_Standalone'.
+# You can specify a specific host (or host group) on the command line:
+#   ansible-playbook ... -e group=<your host group>
+#   e.g., ansible-playbook server_profiles.yml -e group=TME_Demo
+#
+- hosts: "{{ group | default('Intersight_Standalone') }}"
+  connection: local
+  gather_facts: false
+  vars:
+    # Create an anchor for api_info that can be used throughout the file
+    api_info: &api_info
+      api_private_key: "{{ api_private_key }}"
+      api_key_id: "{{ api_key_id }}"
+      api_uri: "{{ api_uri | default(omit) }}"
+      validate_certs: "{{ validate_certs | default(omit) }}"
+      state: "{{ state | default(omit) }}"
+  tasks:
+    # Get detailed inventory (similar to what is shown in the Inventory menu in the UI)
+    - intersight_rest_api:
+        <<: *api_info
+        resource_path: "{{ item }}"
+        query_params:
+          $filter: "Ancestors.Moid eq '{{ server_moid }}'"
+        # Return the full API Results list
+        return_list: true
+      register: inventory
+      loop:
+        - /memory/Units
+        - /network/Elements
+        - /storage/Controllers
+        - /storage/PhysicalDisks
+      delegate_to: localhost
+
+    # Create a <server_name>_inventory.json file in the local directoy
+    - local_action: copy content={{ inventory.results }} dest={{ inventory_hostname }}_inventory.json
