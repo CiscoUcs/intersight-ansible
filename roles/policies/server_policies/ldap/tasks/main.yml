@@ -13,6 +13,7 @@
         "Domain": "{{ domain }}",
         "Timeout": "{{ timeout }}",
         "EnableEncryption": "{{ enable_encryption }}",
+        "EnableGroupAuthorization": "{{ enable_group_authorization | default(omit) }}",
         "Filter": "{{ filter }}",
         "GroupAttribute": "{{ group_attribute }}",
         "Attribute": "{{ attribute }}"
@@ -47,7 +48,8 @@
     <<: *api_info
     resource_path: /iam/EndPointRoles
     query_params:
-      $filter: "Name eq '{{ item.role }}'"
+      # Find the Roles used by the IMC
+      $filter: "Type eq 'IMC' and Name eq '{{ item.role }}'"
   loop: "{{ group_list }}"
   register: endpoint_role
 # Ldap Group Register
