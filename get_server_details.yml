@@ -1,11 +1,13 @@
 ---
 #
-# The hosts group used is provided by the group variable or defaulted to 'Intersight_Standalone'.
+# Summary: Get detailed information for each server in the Ansible inventory.  update_inventory.yml should be run 1st to create Ansible inventory
+#
+# The hosts group used is provided by the group variable or defaulted to 'Intersight_Servers'.
 # You can specify a specific host (or host group) on the command line:
 #   ansible-playbook ... -e group=<your host group>
 #   e.g., ansible-playbook server_profiles.yml -e group=TME_Demo
 #
-- hosts: "{{ group | default('Intersight_Standalone') }}"
+- hosts: "{{ group | default('Intersight_Servers') }}"
   connection: local
   gather_facts: false
   vars:
