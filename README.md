@@ -20,7 +20,7 @@ module_utils = <path to intersight-ansible clone>/module_utils
 | Configuration Category | Configuration Task | Module Name | Status (planned for Ansible 2.6, Proof of Concept, TBD |
 | ---------------------- | ------------------ | ----------- | ------ |
 | General purpose resource config | Any (with user provided data) | intersight_rest_api | Planned for 2.8 |
-| Resource data collection/inventory | GET servers inventory data | intersight_facts | Planned for 2.8 |
+| Resource data collection/inventory | GET servers information | intersight_facts | Planned for 2.8 |
 
 ### Ansible Development Notes
 
@@ -66,18 +66,19 @@ Because Intersight has a single API endpoint, minimal setup is required in playb
 
 localhost (the Ansible controller) can be used without the need to specify any hosts or inventory.  Hosts can be specified to perform parallel actions.  An example of Server Firmware Update on multiple servers is provided by the server_firmware.yml playbook.
 
-If you're using playbooks in this repo, you will need to provide your own inventory file and cusomtize any variables used in playbooks with settings for your environment.  This repo includes an example_inventory file with host groups for HX (Intersight_HX), Standalone C-Series servers (Intersight_Standalone), and API key variables shared for Intersight host groups:
+If you're using playbooks in this repo, you will need to provide your own inventory file and cusomtize any variables used in playbooks with settings for your environment.  This repo includes an example_inventory file with host groups for HX Clusters (Intersight_HX), Standalone C-Series servers (Intersight_Standalone), all Servers (Intersight_Servers) and API key variables shared for Intersight host groups:
 ```
 [Intersight_HX]
-sjc07-r13-500
 sjc07-r13-501
-sjc07-r13-502
 sjc07-r13-503
+
+[Intersight_Servers]
 
 [Intersight_Standalone]
 
 [Intersight:children]
 Intersight_HX
+Intersight_Servers
 Intersight_Standalone
 
 [Intersight:vars]
@@ -86,13 +87,15 @@ api_key_id=...
 ```
 For demo purposes, you can copy the example_inventory file to a new file named inventory.  Then, edit the inventory file to provide your own api_private_key location and api_key_id for use in playbooks.
 
-Once you've provided API key information, the inventory file can be automatically updated with data from your Intersight account using the update_inventory.yml playbook.
+Once you've provided API key information, the inventory file can be automatically updated with data from your Intersight account using one of the following playbooks:
+- update_all_inventory.yml (if you'd like all Servers in the inventory)
+- update_standalone_inventory.yml (if you'd like only Standalone C-Series Servers that can be managed through Server Policies/Profiles)
 
-Here are example command lines for creating your own inventory and running the update_inventory.yml playbook:
+Here are example command lines for creating your own inventory and running the update_standalone_inventory.yml playbook:
 ```
 cp example_inventory inventory
 edit inventory with your api_private_key and api_key_id
-ansible-playbook -i inventory update_inventory.yml
+ansible-playbook -i inventory update_standalone_inventory.yml
 ```
 With an inventory for your Intersight account, you can now run playbooks to configure profiles/policies, and perform other server actions in Intersight:
 ```
@@ -100,10 +103,15 @@ ansible-playbook -i inventory server_profiles.yml
 ansible-playbook -i inventory server_profiles.yml --tags deploy (note: this will deploy settings, run with --check to see what would change 1st)
 ansible-playbook -i inventory server_actions.yml (note: by default this will PowerOn all servers, view the playbook to see other options)
 ```
-You can also create a detailed server inventory file (saved to a local <server_name>_ inventory.json file) with the following command:
+
+Example command lines for creating an inventory with all Servers and getting detailed server information:
 ```
-ansible-playbook -i inventory get_servers_inventory.yml
+cp example_inventory inventory
+edit inventory with your api_private_key and api_key_id
+ansible-playbook -i inventory update_all_inventory.yml
+ansible-playbook -i inventory get_server_details.yml
 ```
+The get_server_details.yml file will create a JSON file with server details for each server in the inventory (saved to a local <server_name>_ info.json file)
 # Community:
 
 * We are on Slack (https://ciscoucs.slack.com/) - Slack requires registration, but the ucspython team is open invitation to
