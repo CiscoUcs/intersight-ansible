@@ -108,14 +108,10 @@ Example command lines for creating an inventory with all Servers and getting det
 ```
 cp example_inventory inventory
 edit inventory with your api_private_key and api_key_id
-ansible-playbook -i inventory update_standalone_inventory.yml
-```
-With an inventory for your Intersight account, you can now run playbooks to configure profiles/policies, and perform other server actions in Intersight:
-```
+ansible-playbook -i inventory update_all_inventory.yml
 ansible-playbook -i inventory get_server_details.yml
 ```
-The get_server_details.yml file will create a JSON file with server details for each server in the inventory.
-
+The get_server_details.yml file will create a JSON file with server details for each server in the inventory (saved to a local <server_name>_ info.json file)
 # Community:
 
 * We are on Slack (https://ciscoucs.slack.com/) - Slack requires registration, but the ucspython team is open invitation to
