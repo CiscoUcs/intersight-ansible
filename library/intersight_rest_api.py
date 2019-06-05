@@ -245,7 +245,8 @@ def main():
         argument_spec,
         supports_check_mode=True,
         mutually_exclusive=[
-            ['return_list', 'api_body', 'state'],
+            ['return_list', 'api_body'],
+            ['return_list', 'state'],
         ],
     )
 
