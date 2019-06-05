@@ -70,18 +70,18 @@
               "ConfiguredBootMode": "Legacy",
               "BootDevices": [
                 {
+                  "ObjectType": "boot.LocalDisk",
+                  "Enabled": true,
+                  "Name": "boot",
+                  "Slot": "HBA"
+                },
+                {
                   "ObjectType": "boot.VirtualMedia",
                   "Enabled": true,
                   "Name": "remote-vmedia",
                   "Subtype": "cimc-mapped-dvd"
-                },
-                {
-                  "ObjectType": "boot.LocalDisk",
-                  "Enabled": true,
-                  "Name": "localdisk",
-                  "Slot": ""
                 }
-              ],
+              ]
             }
           tags: boot_order
         # Virtual Media policy config
@@ -97,8 +97,16 @@
                   "VolumeName": "nfs-cdd",
                   "DeviceType": "cdd",
                   "HostName": "172.28.224.77",
-                  "RemotePath": "/mnt/SHARE/ISOS/ESX",
-                  "RemoteFile": "VMware_ESXi_6.7.0_10302608_Custom_Cisco_6.7.1.1.iso"
+                  "RemotePath": "/mnt/SHARE/ISOS/CENTOS",
+                  "RemoteFile": "CentOS-7-x86_64-DVD-1810.iso"
+                },
+                {
+                  "MountProtocol": "nfs",
+                  "VolumeName": "nfs-hdd",
+                  "DeviceType": "hdd",
+                  "HostName": "172.28.224.77",
+                  "RemotePath": "/mnt/SHARE/ISOS/CENTOS/vmedia_images",
+                  "RemoteFile": "{{ profile_name }}.img"
                 }
               ]
             }
@@ -141,35 +149,6 @@
               "TrapCommunity": "galaxy"
             }
           tags: snmp
-        # Ldap policy config
-        - import_role:
-            name: policies/server_policies/ldap
-          vars:
-            policy_name: MVP_LDAP
-            # Ldap policies will be created with default values if no other vars are provided here
-            base_dn: DC=CISCO,DC=COM
-            domain: cisco.com
-            timeout: 20
-            enable_encryption: true
-            filter: sAMAccountName
-            group_attribute: memberOf
-            attribute: CiscoAvPair
-            # Server ports which are an int are cast to a string if passed in the loop, so instead we directly specify here
-            server_port: 3268
-            server_list:
-              - hostname: tme-global.cisco.com
-              - hostname: tme.cisco.com
-            group_list:
-              - name: cimc-tme-admin
-                domain: cisco.com
-                role: admin
-              - name: cimc-tme-user
-                domain: cisco.com
-                role: user
-              - name: cimc-tme-readonly
-                domain: cisco.com
-                role: readonly
-          tags: ldap
         # NTP policy config
         - import_role:
             name: policies/server_policies
@@ -183,26 +162,6 @@
               ]
             }
           tags: ntp
-        # LAN Connectivity policy config
-        - import_role:
-            name: policies/server_policies/lan_connectivity
-          vars:
-            policy_name: MVP_LAN_Connectivity
-            # Ethernet policies below will be created with default values if no other vars are provided here
-            ethernet_adapter: MVP_eth_adatper
-            ethernet_network: MVP_eth_network
-            vlan_mode: ACCESS
-            default_vlan: 0
-            ethernet_qos: MVP_eth_qos
-            mtu: 9000
-            # vNIC order and uplink are ints which are cast to string when passed in a loop.
-            # So, they are defined inside the role using the loop index (0 or 1)
-            vnic_list:
-              - name: eth0
-                slot_id: MLOM
-              - name: eth1
-                slot_id: MLOM
-          tags: lan
       # Policies are common, so only run this block once and not for every host
       run_once: true
       delegate_to: localhost
