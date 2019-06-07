@@ -4,12 +4,9 @@ sjc07-r13-503
 
 [Intersight_Servers]
 
-[Intersight_Standalone]
-
 [Intersight:children]
 Intersight_HX
 Intersight_Servers
-Intersight_Standalone
 
 [Intersight:vars]
 api_private_key=~/Downloads/SecretKey.txt
