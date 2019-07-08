@@ -82,7 +82,11 @@ Intersight_Servers
 api_private_key=~/Downloads/SecretKey.txt
 api_key_id=...
 ```
-For demo purposes, you can copy the example_inventory file to a new file named inventory.  Then, edit the inventory file to provide your own api_private_key location and api_key_id for use in playbooks.
+For demo purposes, you can copy the example_inventory file to a new file named inventory.  Then, edit the inventory file to provide your own api_private_key location and api_key_id for use in playbooks.  If you're are using the Intersight Virtual Appliance, your inventory file can also specify the appliance URI and use of local certificates:
+```
+api_uri=https://tme-appliance2.intersightdemo.cisco.com/api/v1
+validate_certs=false
+```
 
 Once you've provided API key information, the inventory file can be automatically updated with data from your Intersight account using one of the following playbooks:
 - update_all_inventory.yml (if you'd like all Servers in the inventory)
@@ -96,19 +100,20 @@ ansible-playbook -i inventory update_standalone_inventory.yml
 ```
 With an inventory for your Intersight account, you can now run playbooks to configure profiles/policies, and perform other server actions in Intersight:
 ```
-ansible-playbook -i inventory server_profiles.yml
-ansible-playbook -i inventory server_profiles.yml --tags deploy (note: this will deploy settings, run with --check to see what would change 1st)
+ansible-playbook -i inventory cos_server_policies_and_profiles.yml --list-tasks --list-hosts (will show the tasks and their tags along with the hosts that will be configured)
+ansible-playbook -i inventory cos_server_policies_and_profiles.yml (will configure policies and profiles in Intersight)
+ansible-playbook -i inventory deploy_server_profiles.yml (note: this will deploy settings, run with --check to see what would change 1st)
 ansible-playbook -i inventory server_actions.yml (note: by default this will PowerOn all servers, view the playbook to see other options)
 ```
 
-Example command lines for creating an inventory with all Servers and getting detailed server information:
+Here are example command lines for creating an inventory with all Servers and getting detailed server information:
 ```
 cp example_inventory inventory
 edit inventory with your api_private_key and api_key_id
 ansible-playbook -i inventory update_all_inventory.yml
 ansible-playbook -i inventory get_server_details.yml
 ```
-The get_server_details.yml file will create a JSON file with server details for each server in the inventory (saved to a local <server_name>_ info.json file)
+The get_server_details.yml file will create a JSON file with server details for each server in the inventory (saved to a local .json file)
 # Community:
 
 * We are on Slack (https://ciscoucs.slack.com/) - Slack requires registration, but the ucspython team is open invitation to
