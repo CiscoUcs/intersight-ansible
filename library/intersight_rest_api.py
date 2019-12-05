@@ -149,12 +149,11 @@ def get_resource(intersight):
     response = intersight.call_api(**options)
     if response.get('Results'):
         if intersight.module.params['return_list']:
-            response = response['Results']
+            intersight.result['api_response'] = response['Results']
         else:
             # return the 1st list element
-            response = response['Results'][0]
-
-    return response
+            intersight.result['api_response'] = response['Results'][0]
+    intersight.result['trace_id'] = response.get('trace_id')
 
 
 def compare_lists(expected_list, actual_list):
@@ -203,6 +202,7 @@ def configure_resource(intersight, moid):
             if response_dict.get('Results'):
                 # return the 1st element in the results list
                 intersight.result['api_response'] = response_dict['Results'][0]
+                intersight.result['trace_id'] = response_dict.get('trace_id')
         else:
             # create the resource
             options = {
@@ -210,10 +210,9 @@ def configure_resource(intersight, moid):
                 'resource_path': intersight.module.params['resource_path'],
                 'body': intersight.module.params['api_body'],
             }
-            resp = intersight.call_api(**options)
-            if 'Moid' not in resp:
-                resp = get_resource(intersight)
-            intersight.result['api_response'] = resp
+            intersight.call_api(**options)
+            # POSTs may not return any data so get the current state of the resource
+            get_resource(intersight)
     intersight.result['changed'] = True
 
 
@@ -225,8 +224,9 @@ def delete_resource(intersight, moid):
             'resource_path': intersight.module.params['resource_path'],
             'moid': moid,
         }
-        intersight.call_api(**options)
+        resp = intersight.call_api(**options)
         intersight.result['api_response'] = {}
+        intersight.result['trace_id'] = resp.get('trace_id')
     intersight.result['changed'] = True
 
 
@@ -252,9 +252,10 @@ def main():
 
     intersight = IntersightModule(module)
     intersight.result['api_response'] = {}
+    intersight.result['trace_id'] = ''
 
     # get the current state of the resource
-    intersight.result['api_response'] = get_resource(intersight)
+    get_resource(intersight)
 
     # determine requested operation (config, delete, or neither (get resource only))
     if module.params['state'] == 'present':

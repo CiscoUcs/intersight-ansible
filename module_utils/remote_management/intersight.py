@@ -192,7 +192,9 @@ class IntersightModule():
 
         response_data = response.read()
         if len(response_data) > 0:
-            return json.loads(response_data)
+            resp_json = json.loads(response_data)
+            resp_json['trace_id'] = info.get('x-starship-traceid')
+            return resp_json
         return {}
 
     def intersight_call(self, http_method="", resource_path="", query_params=None, body=None, moid=None, name=None):
