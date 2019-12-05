@@ -23,6 +23,7 @@
   tasks:
     # Deploy (or perform other action)
     # action can be given on the command line if needed, e.g., ansible-playbook ... -e action=Unassign
+    # to delete a profile (profile must 1st be unassigned): ansible-playbook ... -e state=absent -e action=No-op
     - name: Deploy (or user defined action) Server Profile
       intersight_rest_api:
         <<: *api_info

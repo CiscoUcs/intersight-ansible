@@ -24,6 +24,9 @@
     - set_fact:
         remote_file: ucs-c240m4-huu-4.0.2f.iso
       when: model is search("UCSC-C240-M4.*")
+    - set_fact:
+        remote_file: ucs-c240m5-huu-4.0.4f.iso
+      when: model is search("UCSC-C240-M5.*")
     # Update server firmware with a post based on server moid
     - name: Update server firmware
       intersight_rest_api:
