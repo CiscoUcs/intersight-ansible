@@ -170,17 +170,16 @@ def compare_lists(expected_list, actual_list):
 
 def compare_values(expected, actual):
     try:
-        if type(expected) is list and type(actual) is list:
+        if isinstance(expected, list) and isinstance(actual, list):
             return compare_lists(expected, actual)
-        else:
-            for (key, value) in iteritems(expected):
-                if re.search(r'P(ass)?w(or)?d', key) or key not in actual:
-                    # do not compare any password related attributes or attributes that are not in the actual resource
-                    continue
-                if not compare_values(value, actual[key]):
-                    return False
-            # loop complete with all items matching
-            return True
+        for (key, value) in iteritems(expected):
+            if re.search(r'P(ass)?w(or)?d', key) or key not in actual:
+                # do not compare any password related attributes or attributes that are not in the actual resource
+                continue
+            if not compare_values(value, actual[key]):
+                return False
+        # loop complete with all items matching
+        return True
     except (AttributeError, TypeError):
         # if expected and actual != expected:
         if actual != expected:

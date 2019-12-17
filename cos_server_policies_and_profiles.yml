@@ -20,7 +20,19 @@
       state: "{{ state | default(omit) }}"
     # Server Profile name default
     profile_name: "SP-{{ inventory_hostname }}"
+    # Organization name
+    org_name: DevNet
   tasks:
+    # Get the Organization Moid used by all profiles and policies
+    - name: "Get Organization {{ org_name }} Moid"
+      intersight_rest_api:
+        <<: *api_info
+        resource_path: /organization/Organizations
+        query_params:
+          $filter: "Name eq '{{ org_name }}'"
+      register: org_resp
+      delegate_to: localhost
+      tags: always
     #
     # Configure profiles specific to server (run for each server in the inventory)
     # Server Profiles role will register a profile_resp and profile_resp list (from all hosts) can be used by policy tasks
@@ -35,6 +47,9 @@
           "Name": "{{ profile_name }}",
           "AssignedServer": {
             "Moid": "{{ server_moid }}"
+          },
+          "Organization": {
+            "Moid": "{{ org_resp.api_response.Moid }}"
           }
         }
       register: profile_resp
@@ -65,6 +80,9 @@
                   }
                 }
               ],
+              "Organization": {
+                "Moid": "{{ org_resp.api_response.Moid }}"
+              }
             }
           tags: adapter_configuration
         # Boot Order policy
@@ -88,7 +106,10 @@
                   "Name": "VM",
                   "Subtype": "cimc-mapped-dvd"
                 }
-              ]
+              ],
+              "Organization": {
+                "Moid": "{{ org_resp.api_response.Moid }}"
+              }
             }
           tags: boot_order
         # LAN Connectivity and related policies
@@ -118,6 +139,9 @@
                   },
                   "CompletionQueueSettings": {
                     "Count": 16
+                  },
+                  "Organization": {
+                    "Moid": "{{ org_resp.api_response.Moid }}"
                   }
                 }
               register: eth_adapter_resp
@@ -133,6 +157,9 @@
                   "VlanSettings": {
                     "Mode": "TRUNK",
                     "DefaultVlan": 10
+                  },
+                  "Organization": {
+                    "Moid": "{{ org_resp.api_response.Moid }}"
                   }
                 }
               register: eth_network_resp
@@ -145,7 +172,10 @@
                   $filter: "Name eq 'COS-QoS'"
                 api_body: {
                   "Name": "COS-QoS",
-                  "Mtu": 9000
+                  "Mtu": 9000,
+                  "Organization": {
+                    "Moid": "{{ org_resp.api_response.Moid }}"
+                  }
                 }
               register: eth_qos_resp
             # Import role for LAN Connectivity will register a policy_resp
@@ -154,7 +184,10 @@
               vars:
                 resource_path: /vnic/LanConnectivityPolicies
                 api_body: {
-                  "Name": "COS-LAN"
+                  "Name": "COS-LAN",
+                  "Organization": {
+                    "Moid": "{{ org_resp.api_response.Moid }}"
+                  }
                 }
             # vNIC configuration
             # Ideally this would be in a loop, but Uplink is converted to a string (instead of the required int) when in a loop
@@ -182,6 +215,9 @@
                   },
                   "LanConnectivityPolicy": {
                     "Moid": "{{ policy_resp.api_response.Moid }}"
+                  },
+                  "Organization": {
+                    "Moid": "{{ org_resp.api_response.Moid }}"
                   }
                 }
             - name: "Configure eth1"
@@ -208,6 +244,9 @@
                   },
                   "LanConnectivityPolicy": {
                     "Moid": "{{ policy_resp.api_response.Moid }}"
+                  },
+                  "Organization": {
+                    "Moid": "{{ org_resp.api_response.Moid }}"
                   }
                 }
           tags: lan_connectivity
@@ -221,7 +260,10 @@
               "Enabled": true,
               "NtpServers": [
                 "173.38.201.115"
-              ]
+              ],
+              "Organization": {
+                "Moid": "{{ org_resp.api_response.Moid }}"
+              }
             }
           tags: ntp
         # Storage and related policies
@@ -249,6 +291,9 @@
                     }
                   ],
                   "UseJbods":true,
+                  "Organization": {
+                    "Moid": "{{ org_resp.api_response.Moid }}"
+                  }
                 }
               register: disk_group_resp
             # Storage policy
@@ -272,7 +317,10 @@
                       "ExpandToAvailable": true,
                       "BootDrive": true
                     }
-                  ]
+                  ],
+                  "Organization": {
+                    "Moid": "{{ org_resp.api_response.Moid }}"
+                  }
                 }
           tags: storage
         # Virtual Media policy config
@@ -291,7 +339,10 @@
                   "RemotePath": "ibm",
                   "RemoteFile": "clevos-3.13.6.33-allinone-usbiso.iso"
                 }
-              ]
+              ],
+              "Organization": {
+                "Moid": "{{ org_resp.api_response.Moid }}"
+              }
             }
           tags: virtual_media
       # Policies are common, so only run this block once and not for every host

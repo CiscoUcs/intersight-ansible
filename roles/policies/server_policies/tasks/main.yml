@@ -23,17 +23,18 @@
         profile_list: "{{ ansible_play_hosts | map('extract', hostvars, 'profile_resp') | list | json_query(moid_query) }}"
       vars:
         moid_query: "[*].api_response.{Moid: Moid, ObjectType: 'server.Profile'}"
-    - name: "Update Server Profiles used by {{ api_body.Name }} Server Policy"
+    - name: "Update Server Profiles used by {{ api_body.Name }} Server Policy (change may always be reported)"
       intersight_rest_api:
         <<: *api_info
         resource_path: "{{ resource_path }}"
-        update_method: post
         query_params:
           $filter: "Name eq '{{ api_body.Name }}'"
         api_body: {
-          "Profiles": "{{ profile_list }}"
+          "Profiles": "{{ profile_list + policy_resp.api_response.Profiles }}"
         }
   # Do not update if the profile isn't available
   when:
     - profile_resp is defined
     - profile_resp.api_response.Moid is defined
+    - policy_resp is defined
+    - policy_resp.api_response.Profiles is defined
