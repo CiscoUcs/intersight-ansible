@@ -1,21 +1,10 @@
-# intersight-ansible
-* Ansible Modules for Cisco Intersight.
-* Apache License, Version 2.0 (the "License") 
-
 ## News
 
-This repo represents the working copy of modules for Cisco Intersight that will submitted to Ansible in the future.  This repo can be used to provide Cisco Intersight modules before their inclusion in official Ansible releases.
+Note that active development for Ansible modules has moved to the Ansible collection maintained at https://galaxy.ansible.com/cisco/intersight. More information on collections can be found at https://docs.ansible.com/ansible/latest/user_guide/collections_using.html.
 
-There is currently not support for scripted install/uninstall to avoid collision with Ansible hosted modules and ongoing maintenance.  If you are running playbooks from the top-level directory of this repository (with library and module_utils subdirectories) you should not need any other setup to use the modules.
+Ansible 2.10 and later releases move all Cisco modules (Intersight, UCS, ACI, etc.) into collections.  Ansible 2.10 will maintain backward compatibility with existing use of modules in Core (e.g., you can still can intersight_rest_api with 2.10), but later releases will require use of the Galaxy hosted collections (e.g., eventually you must use cisco.intersight.intersight_rest_api).
 
-If needed, you can specfiy this repo as a library and module_utils location with env variables or command line options (e.g., ANSIBLE_LIBRARY=./library ansible-playbook ..).  Alternatively, your .ansible.cfg file can be updated to use this repo as the library path and module_utils path with the following:
-```
-[defaults]
-library = <path to intersight-ansible clone>/library
-module_utils = <path to intersight-ansible clone>/module_utils
-```
-
-### Current Development Status
+### Archived Information and Previous Development Status
 
 | Configuration Category | Configuration Task | Module Name | Status (planned for Ansible 2.6, Proof of Concept, TBD |
 | ---------------------- | ------------------ | ----------- | ------ |
